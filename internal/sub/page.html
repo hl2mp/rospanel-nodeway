@@ -573,7 +573,7 @@
         <button class="btn" onclick="copy('{{.SubURL}}', this)">
           {{.L.CopyLink}}
         </button>
-        <button
+        <!-- <button
           id="openapps-btn"
           class="btn alt"
           onclick="openApps()"
@@ -588,9 +588,29 @@
         >
           {{.L.DownloadClash}}
         </a>
-        {{end}}
+        {{end}} -->
       </div>
 
+      <div id="apps" >
+        <div class="card">
+          <div class="modal-head">
+            <b>{{.L.OpenInApp}}</b>
+            <!-- <button
+              class="x"
+              onclick="document.getElementById('apps').classList.remove('show')"
+            >
+              ✕
+            </button> -->
+          </div>
+          <div class="apps">
+            {{range $i, $d := .DeepLinks}}<a class="app" href="{{$d.Href}}" data-i="{{$i}}" onclick="return appClick(event)"
+              ><span>{{$d.Label}}</span
+              ><span class="plat">{{$d.Platform}}</span></a
+            >{{end}}
+          </div>
+        </div>
+      </div>
+      
       {{if .Devices.Show}}
       <div class="card" id="devices-card">
         <div class="lbl" style="margin-bottom: 8px">
@@ -633,30 +653,6 @@
         {{end}}
       </div>
       {{end}}
-
-    <div
-      id="apps"
-      class="modal"
-      onclick="if (event.target === this) this.classList.remove('show');"
-    >
-      <div class="modal-card">
-        <div class="modal-head">
-          <b>{{.L.PickApp}}</b>
-          <button
-            class="x"
-            onclick="document.getElementById('apps').classList.remove('show')"
-          >
-            ✕
-          </button>
-        </div>
-        <div class="apps">
-          {{range $i, $d := .DeepLinks}}<a class="app" href="{{$d.Href}}" data-i="{{$i}}" onclick="return appClick(event)"
-            ><span>{{$d.Label}}</span
-            ><span class="plat">{{$d.Platform}}</span></a
-          >{{end}}
-        </div>
-      </div>
-    </div>
 
     {{if and .Billing.Providers (gt (len .Billing.Providers) 1)}}
     <div

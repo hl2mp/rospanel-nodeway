@@ -5,13 +5,42 @@ package sub
 import (
 	"encoding/base64"
 	"html/template"
-	"net/url"
+	//"net/url"
 	"strings"
+
+	"bytes"
+    "compress/zlib"
 
 	"github.com/AppsGanin/rospanel/internal/i18n"
 	"github.com/AppsGanin/rospanel/internal/link"
 	"github.com/AppsGanin/rospanel/internal/model"
 )
+
+func encodeWireTurn(subURL string) string {
+    // Просто строка в байты
+    data := []byte(subURL)
+    
+    // Сжимаем с помощью zlib с уровнем 9
+    var compressed bytes.Buffer
+    writer, err := zlib.NewWriterLevel(&compressed, 9)
+    if err != nil {
+        return ""
+    }
+    
+    _, err = writer.Write(data)
+    if err != nil {
+        return ""
+    }
+    err = writer.Close()
+    if err != nil {
+        return ""
+    }
+    
+    // Кодируем в URL-safe base64 и убираем padding
+    b64 := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(compressed.Bytes())
+    
+    return b64
+}
 
 // ShareLinks returns one server's links for a user, in client-import order: the
 // enabled built-in lanes first, then each custom inbound in its display order.
@@ -36,6 +65,9 @@ func ShareLinks(u model.User, srv Server) []string {
 			links = append(links, l)
 		}
 	}
+
+	//links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/nodeway#9a0a3e6c744c282351119324a613f89eff5a576e60d102f95407c1e70d799880$Обход списокв (RT) #UK");
+
 	return links
 }
 
@@ -75,26 +107,22 @@ type DeepLink struct {
 // DeepLinks builds best-effort import deep-links for the popular clients, most
 // popular first. Schemes drift across client releases — verify periodically.
 func DeepLinks(subURL string, lang i18n.Lang) []DeepLink {
-	enc := url.QueryEscape(subURL)
+	//enc := url.QueryEscape(subURL)
 	// Only the generic platform blurbs are translated; the OS names below are
 	// proper nouns and read the same in every language.
-	all := i18n.T(lang, "sub.allPlatforms")
+	//all := i18n.T(lang, "sub.allPlatforms")
 	allTV := i18n.T(lang, "sub.allPlusTV")
+
+	//wireTurnURL := encodeWireTurn(subURL)
+
 	// Shadowrocket's sub:// URI carries the subscription URL base64-encoded (NOT
 	// percent-encoded) — feeding it a %-escaped URL makes it fail with "invalid URL".
-	subB64 := base64.StdEncoding.EncodeToString([]byte(subURL))
+	//subB64 := base64.StdEncoding.EncodeToString([]byte(subURL))
 	return []DeepLink{
 		{"Happ", allTV, template.URL("happ://add/" + subURL)},
 		{"INCY", allTV, template.URL("incy://import/" + subURL)},
 		{"v2RayTun", allTV, template.URL("v2raytun://import/" + subURL)},
-		{"Hiddify", all, template.URL("hiddify://import/" + subURL)},
-		{"Karing", allTV, template.URL("karing://install-config?url=" + enc)},
-		{"sing-box", all, template.URL("sing-box://import-remote-profile?url=" + enc)},
-		{"Clash Meta / Mihomo", "Windows · macOS · Linux · Android", template.URL("clash://install-config?url=" + enc)},
-		{"V2Box", "iOS · macOS · Android", template.URL("v2box://install-sub?url=" + enc)},
-		{"v2rayNG", "Android", template.URL("v2rayng://install-sub?url=" + enc)},
-		{"NekoBox", "Android", template.URL("sn://subscription?url=" + enc)},
 		{"Streisand", "iOS · macOS · tvOS", template.URL("streisand://import/" + subURL)},
-		{"Shadowrocket", "iOS · macOS · tvOS", template.URL("shadowrocket://add/sub://" + subB64)},
+		//{"WireTurn", "Android", template.URL("wireturn://" + wireTurnURL)},
 	}
 }
