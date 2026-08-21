@@ -4,12 +4,15 @@ package sub
 
 import (
 	"encoding/base64"
+	"encoding/hex"
 	"html/template"
+
 	//"net/url"
 	"strings"
 
 	"bytes"
-    "compress/zlib"
+	"compress/zlib"
+	"crypto/sha256"
 
 	"github.com/AppsGanin/rospanel/internal/i18n"
 	"github.com/AppsGanin/rospanel/internal/link"
@@ -17,29 +20,29 @@ import (
 )
 
 func encodeWireTurn(subURL string) string {
-    // Просто строка в байты
-    data := []byte(subURL)
-    
-    // Сжимаем с помощью zlib с уровнем 9
-    var compressed bytes.Buffer
-    writer, err := zlib.NewWriterLevel(&compressed, 9)
-    if err != nil {
-        return ""
-    }
-    
-    _, err = writer.Write(data)
-    if err != nil {
-        return ""
-    }
-    err = writer.Close()
-    if err != nil {
-        return ""
-    }
-    
-    // Кодируем в URL-safe base64 и убираем padding
-    b64 := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(compressed.Bytes())
-    
-    return b64
+	// Просто строка в байты
+	data := []byte(subURL)
+
+	// Сжимаем с помощью zlib с уровнем 9
+	var compressed bytes.Buffer
+	writer, err := zlib.NewWriterLevel(&compressed, 9)
+	if err != nil {
+		return ""
+	}
+
+	_, err = writer.Write(data)
+	if err != nil {
+		return ""
+	}
+	err = writer.Close()
+	if err != nil {
+		return ""
+	}
+
+	// Кодируем в URL-safe base64 и убираем padding
+	b64 := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(compressed.Bytes())
+
+	return b64
 }
 
 // ShareLinks returns one server's links for a user, in client-import order: the
@@ -66,7 +69,13 @@ func ShareLinks(u model.User, srv Server) []string {
 		}
 	}
 
-	//links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/nodeway#9a0a3e6c744c282351119324a613f89eff5a576e60d102f95407c1e70d799880$Обход списокв (RT) #UK");
+	// 1. Вычисляем SHA-256 хеш (возвращает [32]byte)
+	hash := sha256.Sum256([]byte(u.UUID))
+	// 2. Кодируем полученные байты в hex-строку
+	result := hex.EncodeToString(hash[:])
+
+	links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/nodeway#"+result+"$Обход списков (JI) #UK")
+	links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$Обход списков (JI) #RU")
 
 	return links
 }
