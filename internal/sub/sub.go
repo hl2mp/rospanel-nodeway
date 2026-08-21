@@ -123,6 +123,6 @@ func DeepLinks(subURL string, lang i18n.Lang) []DeepLink {
 		{"INCY", allTV, template.URL("incy://import/" + subURL)},
 		{"v2RayTun", allTV, template.URL("v2raytun://import/" + subURL)},
 		{"Streisand", "iOS · macOS · tvOS", template.URL("streisand://import/" + subURL)},
-		//{"WireTurn", "Android", template.URL("wireturn://" + wireTurnURL)},
+		//{"WireTurn - Обход списков (БС)", "Android", template.URL("wireturn://" + wireTurnURL)},
 	}
 }
