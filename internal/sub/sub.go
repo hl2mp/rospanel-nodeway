@@ -122,7 +122,7 @@ func DeepLinks(subURL string, lang i18n.Lang) []DeepLink {
 	//all := i18n.T(lang, "sub.allPlatforms")
 	allTV := i18n.T(lang, "sub.allPlusTV")
 
-	//wireTurnURL := encodeWireTurn(subURL)
+	wireTurnURL := encodeWireTurn(subURL)
 
 	// Shadowrocket's sub:// URI carries the subscription URL base64-encoded (NOT
 	// percent-encoded) — feeding it a %-escaped URL makes it fail with "invalid URL".
@@ -132,6 +132,6 @@ func DeepLinks(subURL string, lang i18n.Lang) []DeepLink {
 		{"INCY", allTV, template.URL("incy://import/" + subURL)},
 		{"v2RayTun", allTV, template.URL("v2raytun://import/" + subURL)},
 		{"Streisand", "iOS · macOS · tvOS", template.URL("streisand://import/" + subURL)},
-		//{"WireTurn - Обход списков (БС)", "Android", template.URL("wireturn://" + wireTurnURL)},
+		{"WireTurn - Обход списков (БС)", "Android", template.URL("wireturn://" + wireTurnURL)},
 	}
 }
