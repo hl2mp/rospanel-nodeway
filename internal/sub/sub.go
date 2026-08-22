@@ -4,6 +4,7 @@ package sub
 
 import (
 	"encoding/base64"
+
 	//"encoding/hex"
 	"html/template"
 
@@ -12,6 +13,7 @@ import (
 
 	"bytes"
 	"compress/zlib"
+
 	//"crypto/sha256"
 
 	"github.com/AppsGanin/rospanel/internal/i18n"
@@ -69,13 +71,19 @@ func ShareLinks(u model.User, srv Server) []string {
 		}
 	}
 
-	// 1. Вычисляем SHA-256 хеш (возвращает [32]byte)
-	//hash := sha256.Sum256([]byte(u.UUID))
-	// 2. Кодируем полученные байты в hex-строку
-	//result := hex.EncodeToString(hash[:])
+	// // 1. Вычисляем SHA-256 хеш (возвращает [32]byte)
+	// hash := sha256.Sum256([]byte(u.UUID))
+	// // 2. Кодируем полученные байты в hex-строку
+	// result := hex.EncodeToString(hash[:])
 
-	//links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/nodeway#"+result+"$Обход списков (JI) #UK")
-	//links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$Обход списков (JI) #RU")
+	// links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$Обход списков (JI) #RU")
+	// links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/nodeway#"+result+"$Обход списков (JI) #UK")
+
+	// links = append(links, "olcrtc://wbstream?vp8channel<vp8-fps=60&vp8-batch=64>@hl2mpru#"+result+"$Обход списков (WB) #RU")
+	// links = append(links, "olcrtc://wbstream?vp8channel<vp8-fps=60&vp8-batch=64>@nodeway#"+result+"$Обход списков (WB) #UK")
+
+	// links = append(links, "olcrtc://telemost?vp8channel<vp8-fps=60&vp8-batch=64>@07339722921845#"+result+"$Обход списков (YA) #RU")
+	// links = append(links, "olcrtc://telemost?vp8channel<vp8-fps=60&vp8-batch=64>@25012798234647#"+result+"$Обход списков (YA) #UK")
 
 	return links
 }
