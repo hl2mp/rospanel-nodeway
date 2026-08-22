@@ -4,7 +4,7 @@ package sub
 
 import (
 	"encoding/base64"
-	"encoding/hex"
+	//"encoding/hex"
 	"html/template"
 
 	//"net/url"
@@ -12,7 +12,7 @@ import (
 
 	"bytes"
 	"compress/zlib"
-	"crypto/sha256"
+	//"crypto/sha256"
 
 	"github.com/AppsGanin/rospanel/internal/i18n"
 	"github.com/AppsGanin/rospanel/internal/link"
@@ -70,12 +70,12 @@ func ShareLinks(u model.User, srv Server) []string {
 	}
 
 	// 1. Вычисляем SHA-256 хеш (возвращает [32]byte)
-	hash := sha256.Sum256([]byte(u.UUID))
+	//hash := sha256.Sum256([]byte(u.UUID))
 	// 2. Кодируем полученные байты в hex-строку
-	result := hex.EncodeToString(hash[:])
+	//result := hex.EncodeToString(hash[:])
 
-	links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/nodeway#"+result+"$Обход списков (JI) #UK")
-	links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$Обход списков (JI) #RU")
+	//links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/nodeway#"+result+"$Обход списков (JI) #UK")
+	//links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$Обход списков (JI) #RU")
 
 	return links
 }
@@ -122,7 +122,7 @@ func DeepLinks(subURL string, lang i18n.Lang) []DeepLink {
 	//all := i18n.T(lang, "sub.allPlatforms")
 	allTV := i18n.T(lang, "sub.allPlusTV")
 
-	wireTurnURL := encodeWireTurn(subURL)
+	//wireTurnURL := encodeWireTurn(subURL)
 
 	// Shadowrocket's sub:// URI carries the subscription URL base64-encoded (NOT
 	// percent-encoded) — feeding it a %-escaped URL makes it fail with "invalid URL".
@@ -132,6 +132,6 @@ func DeepLinks(subURL string, lang i18n.Lang) []DeepLink {
 		{"INCY", allTV, template.URL("incy://import/" + subURL)},
 		{"v2RayTun", allTV, template.URL("v2raytun://import/" + subURL)},
 		{"Streisand", "iOS · macOS · tvOS", template.URL("streisand://import/" + subURL)},
-		{"WireTurn - Обход списков (БС)", "Android", template.URL("wireturn://" + wireTurnURL)},
+		//{"WireTurn - Обход списков (БС)", "Android", template.URL("wireturn://" + wireTurnURL)},
 	}
 }
