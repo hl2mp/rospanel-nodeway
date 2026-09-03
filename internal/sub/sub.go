@@ -3,9 +3,7 @@
 package sub
 
 import (
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 	"html/template"
 	"strings"
@@ -89,21 +87,21 @@ func ShareLinksAll(u model.User, servers []Server) []string {
 		links = append(links, ShareLinks(u, srv)...)
 	}
 
-	// 1. Вычисляем SHA-256 хеш (возвращает [32]byte)
-	hash := sha256.Sum256([]byte(u.UUID))
-	// 2. Кодируем полученные байты в hex-строку
-	result := hex.EncodeToString(hash[:])
+	// // 1. Вычисляем SHA-256 хеш (возвращает [32]byte)
+	// hash := sha256.Sum256([]byte(u.UUID))
+	// // 2. Кодируем полученные байты в hex-строку
+	// result := hex.EncodeToString(hash[:])
 
-	links = append(links, "#name: ☁️ Nodeway - VPN\n#refresh: 1h")
+	// links = append(links, "#name: ☁️ Nodeway - VPN\n#refresh: 1h")
 
-	//links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$Обход списков (JI) #RU")
-	links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/nodeway#"+result+"$Обход списков (JI) #UK")
+	// //links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$Обход списков (JI) #RU")
+	// links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/nodeway#"+result+"$Обход списков (JI) #UK")
 
-	links = append(links, "olcrtc://wbstream?vp8channel<vp8-fps=60&vp8-batch=64>@hl2mpru#"+result+"$Обход списков (WB) #RU")
-	links = append(links, "olcrtc://wbstream?vp8channel<vp8-fps=60&vp8-batch=64>@nodeway#"+result+"$Обход списков (WB) #UK")
+	// links = append(links, "olcrtc://wbstream?vp8channel<vp8-fps=60&vp8-batch=64>@hl2mpru#"+result+"$Обход списков (WB) #RU")
+	// links = append(links, "olcrtc://wbstream?vp8channel<vp8-fps=60&vp8-batch=64>@nodeway#"+result+"$Обход списков (WB) #UK")
 
-	links = append(links, "olcrtc://telemost?vp8channel<vp8-fps=60&vp8-batch=64>@07339722921845#"+result+"$Обход списков (YA) #RU")
-	links = append(links, "olcrtc://telemost?vp8channel<vp8-fps=60&vp8-batch=64>@25012798234647#"+result+"$Обход списков (YA) #UK")
+	// links = append(links, "olcrtc://telemost?vp8channel<vp8-fps=60&vp8-batch=64>@07339722921845#"+result+"$Обход списков (YA) #RU")
+	// links = append(links, "olcrtc://telemost?vp8channel<vp8-fps=60&vp8-batch=64>@25012798234647#"+result+"$Обход списков (YA) #UK")
 
 	return links
 }
