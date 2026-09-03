@@ -133,7 +133,7 @@ type DeepLink struct {
 // popular first. Schemes drift across client releases — verify periodically.
 func DeepLinks(subURL string, lang i18n.Lang) []DeepLink {
 	allTV := i18n.T(lang, "sub.allPlusTV")
-
+	//wireTurnURL := encodeWireTurn(subURL)
 	return []DeepLink{
 		{"Happ", allTV, template.URL("happ://add/" + subURL)},
 		{"INCY", allTV, template.URL("incy://import/" + subURL)},
