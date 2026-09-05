@@ -208,6 +208,8 @@ const en: Dict = {
     badColorText: "the text colour must be #RRGGBB",
     badGrpcService: "invalid gRPC service name (Latin letters, digits, . _ -)",
     badHopInterval: "invalid hop interval (expected “N-M”, e.g. 5-10)",
+    badObfsPassword:
+      "obfuscation password: {{min}}–{{max}} characters, latin letters, digits and .~_-",
     badHopRange2: "invalid hop range",
     badMasqPath: "invalid masquerade path {{value}}",
     badPath: "invalid path (starts with “/”; Latin letters, digits, - _ . / allowed)",
@@ -231,7 +233,8 @@ const en: Dict = {
     hopRangeCoversPort: "the hop range “{{name}}” ({{from}}–{{to}}) covers port {{port}} ({{who}})",
     hopRangeOverlap: "the hop range {{from}}–{{to}} overlaps “{{name}}” ({{otherFrom}}–{{otherTo}})",
     imageTooLarge: "the image is larger than {{dim}}×{{dim}} pixels",
-    inboundNameCharset2: "invalid name {{name}} (letters, digits, emoji, space, . _ - ( ))",
+    inboundNameCharset2:
+      "invalid name {{name}} (letters, digits, emoji, variables in braces, space, . _ - ( ) ·)",
     inboundNameDuplicate2: "the connection name {{name}} is already used on this server — make them distinct",
     inboundNameRequired: "enter a connection name",
     inboundNameReserved: "the name {{name}} is reserved — pick another one",
@@ -311,6 +314,8 @@ const en: Dict = {
     placementCountry: "country: two Latin letters (NL, DE) or blank",
     placementCapacity: "capacity: from 0 (unset) to 1,000,000",
     placementWeight: "weight: from -1000 to 1000",
+    placementTrafficLimit: "traffic limit: from 0 (none) to 1 PB",
+    placementTrafficPeriod: "limit period: month or day",
     subOrderMode: "unknown server ordering mode",
     dpiPackets: "fragment: packets must be tlshello, 1-1 or 1-3",
     dpiFragmentLength: "fragment: length \"{{value}}\" must be a number or min-max within {{lo}}–{{hi}}",
@@ -351,6 +356,7 @@ const en: Dict = {
     totpInvalid: "wrong code",
     totpNoSetup: "start the setup first",
     totpRequired: "enter the code from your authenticator",
+    totpUsed: "that code has already been used — wait for the next one",
     tooManyAttempts: "too many attempts, try again later",
     tooManyStreams: "too many active streams",
     methodNotSupported: "the panel does not accept this request method here",
@@ -386,7 +392,8 @@ const en: Dict = {
     donorNoHTTP2: "the donor {{host}} does not support HTTP/2 — pick another site",
     donorNoTLS13: "the donor {{host}} is not reachable over TLS 1.3 on :443 ({{err}})",
     extendTooLong: "the extension is too long (at most {{max}} days)",
-    inboundNameCharset: "invalid connection name {{value}} (letters, digits, emoji, space, . _ - ( ))",
+    inboundNameCharset:
+      "invalid connection name {{value}} (letters, digits, emoji, variables in braces, space, . _ - ( ) ·)",
     inboundNameDuplicate: "the connection name {{value}} is repeated — make them distinct",
     nameReserved: "the name {{value}} is reserved — pick another one",
     nameTakenByInbound: "the name {{value}} is already used by a custom connection — pick another one",
@@ -490,6 +497,10 @@ const en: Dict = {
     subPathSameAsPanel: "the subscription path cannot be the same as the panel's secret path",
     snapshotNotFound: "snapshot not found",
     snapshotBad: "snapshot is corrupted",
+    subTemplateTooBig: "{{format}} template: at most {{max}} KB",
+    subTemplateTooDeep: "{{format}} template: too many slots or too deeply nested",
+    subTemplateNoSlot: "{{format}} template: no slot for the servers — paste {{slot}} where they go",
+    subTemplateInvalid: "{{format}} template: {{err}}",
     subRuleField: "unknown rule field {{value}}",
     subRuleOp: "unknown rule operator {{value}}",
     subRuleAction: "unknown rule action {{value}}",
@@ -1328,6 +1339,37 @@ const en: Dict = {
     probeHint: "addresses that went looking for the hidden panel path, over the last {{days}} days",
     blockedHint: "refused by the source policy (Settings → General)",
   },
+  nameVars: {
+    hint: "Variables are replaced per user when a subscription is built. Click one to insert it.",
+    churn:
+      "A name that changes as the user spends traffic ({left}, {used}, {days}) is a new server name to the client on every subscription update, which resets the server they had picked. {flag}, {country} and {server} are stable.",
+    flag: "The server's country as a flag",
+    country: "The server's country code",
+    server: "The server's name (replaces the automatic “server · lane” prefix)",
+    user: "The account name",
+    used: "Traffic spent",
+    left: "Traffic remaining, ∞ when unlimited",
+    total: "The traffic limit, ∞ when unlimited",
+    expire: "The expiry date, ∞ when there is none",
+    days: "Whole days until expiry, ∞ when there is none",
+  },
+
+  subTpl: {
+    title: "Profile templates",
+    hint: "Your own document for each format, with the panel's servers spliced in where you mark it. Leave a field empty and the panel generates the profile as before. The servers stay the panel's to build — a template decides the DNS, the groups and the rules around them. It is checked when you save: a document that cannot be parsed, or has nowhere to put the servers, is refused here rather than discovered by a client that drops the whole profile.",
+    clash: "Mihomo / Clash (YAML)",
+    singbox: "sing-box (JSON)",
+    xray: "Xray JSON (one config per connection)",
+    placeholder: "Empty — the panel generates the profile",
+    slots: "Slots:",
+  },
+
+  stepUp: {
+    code: "Code from your authenticator",
+    codeHint:
+      "A fresh code — the one that signed you in has already been used. If it is refused, wait for the next one.",
+  },
+
   sessions: {
     title: "Active sessions",
     hint: "Where this account is signed in. A device you don't recognise: end its session and change the password.",
@@ -2093,6 +2135,13 @@ const en: Dict = {
     sec: "{{range}} s",
     hopHint:
       "The client spreads traffic across the hop range, and nftables funnels it back to the base port.",
+    obfs: "Obfuscation (Salamander)",
+    obfsOff: "off",
+    obfsGenerate: "Generate a key",
+    obfsDisable: "Turn off",
+    obfsWillRegen: "a new key will be generated on save",
+    obfsHint:
+      "Hysteria2 is QUIC, and a QUIC handshake is the one thing a DPI box can recognise before any traffic flows. With a key set, every datagram is XORed with it and the handshake stops being recognisable. The key is generated here, never typed. It goes into every link and profile, so clients pick it up on their next subscription update — old links stop working the moment you save.",
     enableHysteria: "Enable HYSTERIA-UDP to configure the ports and the interval.",
     masquerade: "Masquerade (SNI)",
     sniPlaceholder: "max.ru — type and press Enter…",
@@ -2411,6 +2460,9 @@ const en: Dict = {
     evProbeDesc: "A daily summary of IPs scanning the address for the hidden panel.",
     evLoginLabel: "Sign-in from a new address",
     evLoginDesc: "An admin signed in from an IP they had not used before. The message carries a “Not me” button that ends every session of that admin.",
+    evNodeTrafficLabel: "Server traffic limit",
+    evNodeTrafficDesc:
+      "A server reached the traffic limit set for it, and again when the period rolls over and it has allowance again.",
     uEndingLabel: "Subscription ending soon",
     uEndingDesc: "A reminder the chosen number of days ahead",
     uLowTrafficLabel: "Traffic running out",
@@ -2592,6 +2644,19 @@ const en: Dict = {
   },
 
   nodes: {
+    traffic: {
+      title: "Traffic limit",
+      hint: "How much this server may carry before the panel says something. Counted from what the panel attributes to it, which runs slightly under what the hosting bills — the safe direction for a threshold. Leave empty for no limit.",
+      limit: "Limit, GB",
+      noLimit: "no limit",
+      period: "Per",
+      perMonth: "Month (from the 1st)",
+      perDay: "Day",
+      hideWhenOver: "Hide the server once the limit is reached",
+      hideHint: "It drops out of subscriptions until the period rolls over. Never all of them: if every server is over, they all keep serving.",
+      hideNeedsLimit: "Set a limit first.",
+      over: "over the limit",
+    },
     placement: {
       title: "Place in subscriptions",
       hint: "Weight and capacity decide the order of servers in a subscription (Settings → Subscriptions → Server order). The server's country is detected from its address automatically.",

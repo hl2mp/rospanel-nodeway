@@ -52,14 +52,14 @@ func clashProxies(u model.User, srv Server) []clashProxy {
 	}
 	var out []clashProxy
 	if set.VLESSEnabled && srv.allowsBuiltin(model.LaneVLESS) {
-		n := link.Label(model.ProtoVLESS, set)
+		n := link.LabelFor(model.ProtoVLESS, u, set)
 		out = append(out, clashProxy{n, fmt.Sprintf(
 			"  - {name: %q, type: vless, server: %q, port: %d, uuid: %q, network: tcp, tls: true, udp: true, servername: %q, flow: xtls-rprx-vision, client-fingerprint: %s, skip-cert-verify: %s}",
 			n, set.Host, set.VLESSPort, u.UUID, set.SNI, set.VLESSFP(), sv)})
 	}
 	// No public key, no dialable lane — see ShareLinks.
 	if set.RealityEnabled && set.RealityPublicKey != "" && srv.allowsBuiltin(model.LaneReality) {
-		n := link.Label(model.ProtoReality, set)
+		n := link.LabelFor(model.ProtoReality, u, set)
 		out = append(out, clashProxy{n, fmt.Sprintf(
 			"  - {name: %q, type: vless, server: %q, port: %d, uuid: %q, network: xhttp, tls: true, udp: true, servername: %q, client-fingerprint: %s, reality-opts: {public-key: %q, short-id: %q}, xhttp-opts: {path: %q}}",
 			n, set.Host, set.RealityPort, u.UUID, set.RealitySNI(), set.RealityFP(), set.RealityPublicKey, set.RealitySID(), set.RealityPathOr())})
@@ -69,10 +69,10 @@ func clashProxies(u model.User, srv Server) []clashProxy {
 		if set.HopEnd > set.HysteriaPort {
 			hop = fmt.Sprintf(", ports: %q", fmt.Sprintf("%d-%d", model.HopAdvertised(set.HysteriaPort, set.HopStart), set.HopEnd))
 		}
-		n := link.Label(model.ProtoHysteria, set)
+		n := link.LabelFor(model.ProtoHysteria, u, set)
 		out = append(out, clashProxy{n, fmt.Sprintf(
-			"  - {name: %q, type: hysteria2, server: %q, port: %d, password: %q, sni: %q, alpn: [h3], skip-cert-verify: %s%s}",
-			n, set.Host, set.HysteriaPort, u.Password, set.SNI, sv, hop)})
+			"  - {name: %q, type: hysteria2, server: %q, port: %d, password: %q, sni: %q, alpn: [h3], skip-cert-verify: %s%s%s}",
+			n, set.Host, set.HysteriaPort, u.Password, set.SNI, sv, hop, clashObfs(set.HysteriaObfs))})
 	}
 	for _, in := range srv.Custom {
 		if !srv.allowsInbound(in.ID) {
@@ -90,6 +90,17 @@ func clashProxies(u model.User, srv Server) []clashProxy {
 	return out
 }
 
+// clashObfs renders mihomo's Salamander fields for a Hysteria2 proxy, or "" when
+// the lane is not obfuscated. %q on the key is safe rather than decorative: the key
+// is operator input, and an unquoted one would end the inline mapping early and cost
+// the user every proxy in the profile.
+func clashObfs(obfs string) string {
+	if obfs == "" {
+		return ""
+	}
+	return fmt.Sprintf(", obfs: salamander, obfs-password: %q", obfs)
+}
+
 // clashCustom renders one custom inbound as a Clash proxy, or reports false when
 // mihomo cannot express that protocol × transport (see model.SupportsClash). An
 // inexpressible combination is DROPPED rather than approximated: a client that
@@ -100,7 +111,7 @@ func clashCustom(u model.User, in model.Inbound, set *model.Settings, sv string)
 		return clashProxy{}, false
 	}
 	o := in.Opts
-	n := link.CustomLabel(in, set)
+	n := link.CustomLabelFor(in, u, set)
 
 	if in.Protocol == model.InbHysteria {
 		hop := ""
@@ -108,8 +119,8 @@ func clashCustom(u model.User, in model.Inbound, set *model.Settings, sv string)
 			hop = fmt.Sprintf(", ports: %q", fmt.Sprintf("%d-%d", model.HopAdvertised(in.Port, o.HopStart), o.HopEnd))
 		}
 		return clashProxy{n, fmt.Sprintf(
-			"  - {name: %q, type: hysteria2, server: %q, port: %d, password: %q, sni: %q, alpn: [h3], skip-cert-verify: %s%s}",
-			n, set.Host, in.Port, u.Password, clashSNI(in, set), sv, hop)}, true
+			"  - {name: %q, type: hysteria2, server: %q, port: %d, password: %q, sni: %q, alpn: [h3], skip-cert-verify: %s%s%s}",
+			n, set.Host, in.Port, u.Password, clashSNI(in, set), sv, hop, clashObfs(o.Obfs))}, true
 	}
 
 	if in.Protocol == model.InbShadowsocks {
@@ -193,11 +204,24 @@ func firstShortID(o model.InboundOpts) string {
 }
 
 // clashProxiesAll concatenates a user's proxy entries across every server (local +
-// each node). Names are unique because Settings.ProtoLabel appends the node label.
+// each node), giving each a name no other entry shares. The node label keeps servers
+// apart on its own; what needs de-duplicating is two lanes on one server whose names
+// carry variables that happen to resolve alike (see uniqueLabel).
 func clashProxiesAll(u model.User, servers []Server) []clashProxy {
 	var out []clashProxy
+	seen := map[string]int{}
 	for _, srv := range servers {
-		out = append(out, clashProxies(u, srv)...)
+		for _, p := range clashProxies(u, srv) {
+			uniq := uniqueLabel(seen, p.name)
+			if uniq != p.name {
+				// The name is the first %q-quoted field of the line, so replacing its
+				// first occurrence rewrites exactly the one that matters and leaves an
+				// SNI or a password that happens to read the same alone.
+				p.line = strings.Replace(p.line, fmt.Sprintf("%q", p.name), fmt.Sprintf("%q", uniq), 1)
+				p.name = uniq
+			}
+			out = append(out, p)
+		}
 	}
 	return out
 }
@@ -264,6 +288,15 @@ func clashGroupName(u model.User, set *model.Settings) string {
 	return strings.TrimSpace(strings.ReplaceAll(SubTitle(u, set), ",", " "))
 }
 
+// The two markers a mihomo template carries. Named constants because the operator's
+// template, the validator and the injector all have to agree on them character for
+// character — a template whose marker is a space out is silently served without any
+// proxies in it.
+const (
+	clashProxiesMarker = "proxies: # LEAVE THIS LINE!"
+	clashNamesMarker   = "    # LEAVE THIS LINE!"
+)
+
 // ClashWithTemplateMulti injects the user's proxies into a RoscomVPN-style Mihomo
 // routing template. The template carries two "# LEAVE THIS LINE!" markers: the
 // `proxies:` line (full proxy definitions) and a slot inside the main select group
@@ -271,7 +304,7 @@ func clashGroupName(u model.User, set *model.Settings) string {
 // marker.
 func ClashWithTemplateMulti(u model.User, servers []Server, template string) string {
 	proxies := clashProxiesAll(u, servers)
-	if len(proxies) == 0 || !strings.Contains(template, "proxies: # LEAVE THIS LINE!") {
+	if len(proxies) == 0 || !strings.Contains(template, clashProxiesMarker) {
 		return ClashYAMLMulti(u, servers)
 	}
 
@@ -280,7 +313,7 @@ func ClashWithTemplateMulti(u model.User, servers []Server, template string) str
 		defs[i] = p.line
 	}
 	out := strings.Replace(template,
-		"proxies: # LEAVE THIS LINE!",
+		clashProxiesMarker,
 		"proxies:\n"+strings.Join(defs, "\n"),
 		1,
 	)
@@ -290,6 +323,6 @@ func ClashWithTemplateMulti(u model.User, servers []Server, template string) str
 	for _, p := range proxies {
 		fmt.Fprintf(&names, "      - %q\n", p.name)
 	}
-	out = strings.Replace(out, "    # LEAVE THIS LINE!", strings.TrimRight(names.String(), "\n"), 1)
+	out = strings.Replace(out, clashNamesMarker, strings.TrimRight(names.String(), "\n"), 1)
 	return out
 }

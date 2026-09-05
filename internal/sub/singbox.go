@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/AppsGanin/rospanel/internal/extsub"
 	"net"
+	"strings"
 
 	"github.com/AppsGanin/rospanel/internal/link"
 	"github.com/AppsGanin/rospanel/internal/model"
@@ -20,8 +21,8 @@ func SingBoxJSON(u model.User, set *model.Settings) string {
 // unambiguous.
 func singboxProxies(u model.User, srv Server) (proxies []any, tags []string) {
 	set := srv.Set
-	nV := link.Label(model.ProtoVLESS, set)
-	nH := link.Label(model.ProtoHysteria, set)
+	nV := link.LabelFor(model.ProtoVLESS, u, set)
+	nH := link.LabelFor(model.ProtoHysteria, u, set)
 	insecure := set.TLSInsecure // true only for a self-signed/IP cert
 
 	vless := map[string]any{
@@ -45,6 +46,7 @@ func singboxProxies(u model.User, srv Server) (proxies []any, tags []string) {
 		hy2["hop_interval"] = "10s"
 		delete(hy2, "server_port")
 	}
+	singboxObfs(hy2, set.HysteriaObfs)
 
 	// Anti-DPI shaping of the generated config (client-side only; no server change).
 	// ClientHello fragmentation (sing-box ≥1.12) defeats stateless SNI inspection on
@@ -105,7 +107,7 @@ func singboxCustom(u model.User, in model.Inbound, set *model.Settings) (map[str
 		return nil, "", false
 	}
 	o := in.Opts
-	tag := link.CustomLabel(in, set)
+	tag := link.CustomLabelFor(in, u, set)
 
 	if in.Protocol == model.InbHysteria {
 		out := map[string]any{
@@ -121,6 +123,7 @@ func singboxCustom(u model.User, in model.Inbound, set *model.Settings) (map[str
 			out["hop_interval"] = "10s"
 			delete(out, "server_port")
 		}
+		singboxObfs(out, o.Obfs)
 		return out, tag, true
 	}
 
@@ -190,13 +193,7 @@ func SingBoxJSONMulti(u model.User, servers []Server) string {
 	}
 	local := servers[0].Set
 
-	var proxies []any
-	var tags []string
-	for _, srv := range servers {
-		p, t := singboxProxies(u, srv)
-		proxies = append(proxies, p...)
-		tags = append(tags, t...)
-	}
+	proxies, tags := singboxProxiesAll(u, servers)
 
 	group := SubTitle(u, local)
 	// Nothing allowed ⇒ no tags. A urltest with an empty outbound list and a selector
@@ -279,4 +276,76 @@ func SingBoxJSONMulti(u model.User, servers []Server) string {
 		return "{}"
 	}
 	return string(b)
+}
+
+// SingBoxWithTemplate renders the user's outbounds into the operator's own sing-box
+// document. {{proxies}} takes the generated outbounds, {{tags}} their tags and
+// {{group}} the profile's name — enough to write any group layout, DNS and rule set
+// on top of servers the panel still owns.
+//
+// Falls back to the generated profile whenever the template cannot produce a working
+// one: unparseable, or the user has no servers to put in it. A client that cannot
+// parse a profile drops all of it, so serving the plain one is always better than
+// serving a broken document.
+func SingBoxWithTemplate(u model.User, servers []Server, template string) (string, error) {
+	if strings.TrimSpace(template) == "" {
+		return SingBoxJSONMulti(u, servers), nil
+	}
+	if len(servers) == 0 {
+		return SingBoxJSONMulti(u, servers), nil
+	}
+	proxies, tags := singboxProxiesAll(u, servers)
+	// Nothing allowed: the generated profile has a direct-only answer for this, which
+	// is valid and honest. A template spliced with an empty proxy list would leave a
+	// selector pointing at nothing, which sing-box refuses outright.
+	if len(tags) == 0 {
+		return SingBoxJSONMulti(u, servers), nil
+	}
+	tagList := make([]any, len(tags))
+	for i, t := range tags {
+		tagList[i] = t
+	}
+	out, err := renderJSONTemplate(template,
+		map[string]any{TplGroup: SubTitle(u, servers[0].Set)},
+		map[string][]any{TplProxies: proxies, TplTags: tagList},
+	)
+	if err != nil {
+		return SingBoxJSONMulti(u, servers), err
+	}
+	return out, nil
+}
+
+// singboxProxiesAll gathers every server's outbounds, giving each a tag no other
+// outbound shares. A duplicate tag is fatal in sing-box — the selector would name it
+// twice and the profile is refused — so the de-duplication is not cosmetic; see
+// uniqueLabel for how two differently-named lanes end up asking for the same tag.
+func singboxProxiesAll(u model.User, servers []Server) ([]any, []string) {
+	var proxies []any
+	var tags []string
+	seen := map[string]int{}
+	for _, srv := range servers {
+		p, t := singboxProxies(u, srv)
+		for i := range p {
+			uniq := uniqueLabel(seen, t[i])
+			if uniq != t[i] {
+				if m, ok := p[i].(map[string]any); ok {
+					m["tag"] = uniq
+				}
+				t[i] = uniq
+			}
+			proxies = append(proxies, p[i])
+			tags = append(tags, t[i])
+		}
+	}
+	return proxies, tags
+}
+
+// singboxObfs adds sing-box's Salamander block to a Hysteria2 outbound, or leaves
+// it alone when the lane is not obfuscated. sing-box's implementation is wire
+// compatible with the Xray finalmask mask the server runs, so one key serves both.
+func singboxObfs(out map[string]any, obfs string) {
+	if obfs == "" {
+		return
+	}
+	out["obfs"] = map[string]any{"type": "salamander", "password": obfs}
 }

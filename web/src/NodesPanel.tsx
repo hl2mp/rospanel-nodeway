@@ -61,6 +61,7 @@ import { fmtBytes } from "./format";
 import { decoyLabel } from "./GeneralSettings";
 import { HealthPanel } from "./HealthPanel";
 import { errMessage, notifyError, notifySuccess } from "./notify";
+import { EMPTY_STEP_UP, type StepUp, StepUpFields, stepUpReady, useTotpEnabled } from "./stepup";
 import { TLSPanel } from "./TLSPanel";
 import { XrayConfigView } from "./XrayConfig";
 import { XrayLogs } from "./XrayLogs";
@@ -1201,7 +1202,12 @@ function NodeSettingsDialog({
               />
               <p className="text-xs text-ink-muted">{t("nodes.coefficientHint")}</p>
             </div>
-            <PlacementFields value={pl} onChange={setPl} online={node.online_users ?? 0} />
+            <PlacementFields
+              value={pl}
+              onChange={setPl}
+              online={node.online_users ?? 0}
+              trafficUsed={node.traffic_period_used}
+            />
             <SystemProxyEditor
               host={node.host}
               value={proxy}
@@ -1528,7 +1534,12 @@ function MasterSettingsDialog({
                   onChange={setDecoy}
                   data={decoys.map((d) => ({ value: d, label: decoyLabel(d) }))}
                 />
-                <PlacementFields value={pl} onChange={setPl} online={node.online_users ?? 0} />
+                <PlacementFields
+              value={pl}
+              onChange={setPl}
+              online={node.online_users ?? 0}
+              trafficUsed={node.traffic_period_used}
+            />
                 <SystemProxyEditor
                   host={node.host}
                   value={proxy}
@@ -1664,6 +1675,10 @@ function NodeCard({
   const [showingConfig, setShowingConfig] = useState(false);
   const [showingHealth, setShowingHealth] = useState(false);
   const [restarting, setRestarting] = useState(false);
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [removeCreds, setRemoveCreds] = useState<StepUp>(EMPTY_STEP_UP);
+  const [removing, setRemoving] = useState(false);
+  const totpEnabled = useTotpEnabled();
 
   const toggleEnabled = async (enabled: boolean) => {
     try {
@@ -1674,24 +1689,51 @@ function NodeCard({
     }
   };
 
+  // Deleting a server is re-authorised, not just confirmed: it cuts off everyone on
+  // that node at once and the panel has no undo for it — the box has to be installed
+  // and joined again. Hence a form rather than the shared yes/no dialog.
+  const closeRemove = () => {
+    setRemoveOpen(false);
+    setRemoveCreds(EMPTY_STEP_UP);
+  };
+
   const remove = async () => {
-    if (
-      !(await confirm({
-        title: t("nodes.deleteTitle"),
-        body: t("nodes.deleteBody", { name: node.name }),
-        confirmLabel: t("common.delete"),
-        danger: true,
-      }))
-    )
-      return;
+    setRemoving(true);
     try {
-      await deleteNode(node.id);
+      await deleteNode(node.id, removeCreds.password, removeCreds.code);
+      closeRemove();
       notifySuccess(t("nodes.deleted"));
       onChanged();
     } catch (e) {
+      // The dialog stays open: a refused code is the common case, and it is worth
+      // exactly one more attempt rather than a re-opened form with the password gone.
       notifyError(errMessage(e));
+    } finally {
+      setRemoving(false);
     }
   };
+
+  const removeModal = (
+    <Modal open={removeOpen} onClose={closeRemove} title={t("nodes.deleteTitle")}>
+      <p className="text-sm leading-relaxed text-ink-muted">
+        {t("nodes.deleteBody", { name: node.name })}
+      </p>
+      <StepUpFields value={removeCreds} onChange={setRemoveCreds} />
+      <div className="mt-5 flex justify-end gap-2">
+        <Button variant="light" color="gray" onClick={closeRemove}>
+          {t("common.cancel")}
+        </Button>
+        <Button
+          color="red"
+          loading={removing}
+          disabled={!stepUpReady(removeCreds, totpEnabled)}
+          onClick={remove}
+        >
+          {t("common.delete")}
+        </Button>
+      </div>
+    </Modal>
+  );
 
   const doUpdate = async () => {
     try {
@@ -1737,6 +1779,7 @@ function NodeCard({
   return (
     <div className={cn("px-4 py-3.5", !node.enabled && !node.is_local && "opacity-55")}>
       {confirmNode}
+      {removeModal}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -1828,7 +1871,7 @@ function NodeCard({
                 {t("nodes.reinstall")}
               </DropdownItem>
               <DropdownDivider />
-              <DropdownItem color="red" onClick={remove}>
+              <DropdownItem color="red" onClick={() => setRemoveOpen(true)}>
                 {t("common.delete")}
               </DropdownItem>
             </Dropdown>
