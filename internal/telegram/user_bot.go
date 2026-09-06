@@ -273,13 +273,6 @@ func (s *UserService) handleMessage(ctx context.Context, client *Client, m *Mess
 		s.handleStart(ctx, client, set, chatID, args)
 		return
 	}
-	// Handled before the pending-state machine so an explicit command always wins:
-	// someone half-way through registration must still be able to open this, and
-	// doing so must not eat the step they were on.
-	if cmd == "/mailing" {
-		s.showMailing(ctx, client, chatID, 0)
-		return
-	}
 	pending := s.takePending(chatID)
 	if u, ok := s.findLinkedUser(chatID); ok {
 		if pending == "reg" {
@@ -403,13 +396,6 @@ func (s *UserService) handleCallback(ctx context.Context, client *Client, cb *Ca
 	msgID := cb.Message.MessageID
 	set, err := s.store.GetSettings()
 	if err != nil {
-		return
-	}
-	// Before the linked-user split and before pending is cleared: the mailing toggle
-	// belongs to everyone in the audience, registered or not, and tapping it must not
-	// drop a registration step in progress.
-	if on, ok := strings.CutPrefix(cb.Data, "vu:mail:"); ok {
-		s.setMailing(ctx, client, chatID, msgID, on == "on")
 		return
 	}
 	s.clearPending(chatID)
@@ -985,55 +971,9 @@ func userStartLinkCode(arg string) string {
 	return ""
 }
 
-// Broadcast opt-out. Kept as its own command rather than a button under every
-// broadcast: the alternative to a findable opt-out isn't a captive audience, it's
-// people blocking the bot — and a block is irreversible and silently kills payment
-// confirmations and support replies along with the newsletter.
-
-// mailingCard renders the current state and the button that flips it.
-func mailingCard(optOut bool, lang i18n.Lang) (string, [][]InlineButton) {
-	if optOut {
-		return i18n.T(lang, "user.mailingOff"),
-			[][]InlineButton{{{Text: i18n.T(lang, "user.btnSubscribe"), CallbackData: "vu:mail:on"}}}
-	}
-	return i18n.T(lang, "user.mailingOn"),
-		[][]InlineButton{{{Text: i18n.T(lang, "user.btnUnsubscribe"), CallbackData: "vu:mail:off"}}}
-}
-
-// showMailing displays the toggle. msgID 0 sends a new message; otherwise the card
-// is edited in place, like the rest of the bot's screens.
-func (s *UserService) showMailing(ctx context.Context, client *Client, chatID, msgID int64) {
-	lang := s.lang(chatID)
-	optOut := false
-	if sub, err := s.store.SubscriberByChat(chatID); err != nil {
-		log.Printf("telegram user: mailing state for %d: %v", chatID, err)
-	} else if sub != nil {
-		optOut = sub.OptOut
-	}
-	text, rows := mailingCard(optOut, lang)
-	if msgID == 0 {
-		s.sendMenu(ctx, client, chatID, text, rows)
-		return
-	}
-	s.edit(ctx, client, chatID, msgID, text, rows)
-}
-
-func (s *UserService) setMailing(ctx context.Context, client *Client, chatID, msgID int64, on bool) {
-	if err := s.store.SetSubscriberOptOut(chatID, !on, time.Now().Unix()); err != nil {
-		log.Printf("telegram user: set mailing for %d: %v", chatID, err)
-		return
-	}
-	s.showMailing(ctx, client, chatID, msgID)
-}
-
-// userBotCommands is the command menu published to Telegram. One entry, not three:
-// the card it opens shows the current state and the single button that flips it, so
-// naming each direction as its own command only made the menu longer without telling
-// anyone anything the card doesn't.
 func userBotCommands(lang i18n.Lang) []BotCommand {
 	return []BotCommand{
 		{Command: "start", Description: i18n.T(lang, "user.cmdStart")},
-		{Command: "mailing", Description: i18n.T(lang, "user.cmdMailing")},
 	}
 }
 

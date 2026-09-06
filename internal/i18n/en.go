@@ -118,8 +118,6 @@ var en = map[string]string{
 	"user.btnCancelSub":   "🚫 Cancel the subscription",
 	"user.btnRenewPlan":   "🔄 Renew “%s”",
 	"user.btnPay":         "💳 Pay",
-	"user.btnSubscribe":   "🔔 Subscribe",
-	"user.btnUnsubscribe": "🔕 Unsubscribe",
 
 	"user.cardPlan":               "💳 Plan: <b>%s</b>",
 	"user.cardPlanManual":         "💳 Plan: manual",
@@ -162,10 +160,7 @@ var en = map[string]string{
 	"user.pickPayMethod": "Choose a payment method:",
 	"user.orderPay":      "💳 <b>Order #%d payment</b>\nAmount: %d ₽\n\nPress the button to pay. The plan activates automatically once paid.",
 
-	"user.mailingOff": "📣 <b>Broadcasts</b>\n\nCurrently: <b>off</b>\n\nService notifications — payments and support replies — arrive either way.",
-	"user.mailingOn":  "📣 <b>Broadcasts</b>\n\nCurrently: <b>on</b>\n\nService news and important announcements.",
 	"user.cmdStart":   "My subscription",
-	"user.cmdMailing": "Broadcasts: subscribe and unsubscribe",
 
 	// ── Support bot ──────────────────────────────────────────────────────────
 	"support.greeting":             "💬 <b>Support</b>\n\nDescribe the problem in a message to this chat — you can attach a screenshot. We'll reply right here.",

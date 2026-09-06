@@ -49,8 +49,8 @@ func (s *Store) SetSubscriberBlocked(chatID, at int64) error {
 	return err
 }
 
-// SetSubscriberOptOut records the /mailing choice. It inserts when the chat
-// isn't known yet, so an opt-out is never lost to a missing row.
+// SetSubscriberOptOut keeps compatibility with existing opt-out records. The
+// Telegram user bot no longer exposes a way to change this flag.
 func (s *Store) SetSubscriberOptOut(chatID int64, out bool, now int64) error {
 	_, err := s.db.Exec(
 		`INSERT INTO tg_subscribers (chat_id, opt_out, started_at) VALUES (?, ?, ?)
