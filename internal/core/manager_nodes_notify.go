@@ -61,6 +61,10 @@ type nodeAlertState struct {
 	// all-clear only for an alarm they actually saw.
 	trafficAlerted bool
 
+	// awgDownAlerted is the same for the AmneziaWG tunnel: once when it stops being
+	// up, once when it comes back.
+	awgDownAlerted bool
+
 	xrayAlerted    bool
 	xrayDownAt     time.Time
 	lastXrayNotify time.Time
@@ -90,7 +94,11 @@ func (m *Manager) nodeWatchLoop() {
 		// (compare a server against a threshold, tell admins once per crossing) and the
 		// answer is a SUM the subscription path must not be paying for per request.
 		m.refreshNodeTraffic()
-		<-t.C
+		select {
+		case <-t.C:
+		case <-m.done:
+			return
+		}
 		// The status page's history rides this tick: it needs the same "is each server
 		// up" question the sweep just answered, on the same cadence, and a second timer
 		// asking it again would only add writes.
@@ -146,6 +154,13 @@ func (m *Manager) sweepAlerts(nodes []model.Node, local *sysstat.Stats, now time
 			m.notifyAdminEvent(model.AdminEventXrayDown, msg)
 		}
 	}
+	// The master's own tunnel, on the same terms as a node's. Nodes report theirs over
+	// the sync protocol; this one runs in this process, so it is asked directly — and
+	// without this the one server whose logs the operator can actually read is the one
+	// that never told them.
+	if msg := m.localAWGAlertMsg(); msg != "" {
+		m.notifyAdminEvent(model.AdminEventXrayDown, msg)
+	}
 	m.pruneNodeAlerts(live)
 }
 
@@ -168,6 +183,40 @@ func (m *Manager) localDiskAlertMsg(live map[int64]struct{}, used, total int64) 
 	st.diskLowAlerted = next
 	st.known = true
 	return msg
+}
+
+// localAWGAlertMsg is localDiskAlertMsg's twin for the master's AmneziaWG tunnel:
+// one message when it stops being up, one when it comes back, and nothing at all when
+// the lane is switched off.
+func (m *Manager) localAWGAlertMsg() string {
+	set, err := m.store.GetSettings()
+	if err != nil {
+		return ""
+	}
+	m.nodeAlertMu.Lock()
+	defer m.nodeAlertMu.Unlock()
+	st := m.nodeAlertLocked(model.LocalNodeID)
+	if !set.AWGEnabled {
+		// Switched off: forget the alarm so turning it back on starts clean rather
+		// than believing admins were already told.
+		st.awgDownAlerted = false
+		return ""
+	}
+	running, lastErr := m.AWGStatus()
+	lang := m.botLang()
+	switch {
+	case !running && !st.awgDownAlerted:
+		st.awgDownAlerted = true
+		msg := fmt.Sprintf(i18n.T(lang, "notify.nodeAWGDown"), model.LocalNodeName)
+		if lastErr != "" {
+			msg += "\n" + escHTML(lastErr)
+		}
+		return msg
+	case running && st.awgDownAlerted:
+		st.awgDownAlerted = false
+		return fmt.Sprintf(i18n.T(lang, "notify.nodeAWGBack"), model.LocalNodeName)
+	}
+	return ""
 }
 
 // nodeAlertsFor advances one node's alert state and returns the messages that
@@ -243,6 +292,36 @@ func (m *Manager) nodeAlertsFor(n *model.Node, now time.Time, diskUsed, diskTota
 		out = append(out, nodeAlertMsg{model.AdminEventXrayDown, msg})
 	}
 	st.xrayUp = n.XrayRunning
+
+	// The AmneziaWG tunnel, when the operator switched the lane on for this server.
+	// Nothing else watched it: the agent applies the tunnel and a failure went into
+	// the node's own log and no further, so the panel kept the server green and kept
+	// issuing keys for a lane nobody could connect through.
+	//
+	// Only for a node that actually reports the state. An agent older than the feature
+	// says nothing, and reading silence as "down" would alert on every node in the
+	// fleet the moment this ships.
+	if awgEnabledOn(n) {
+		if awg, ok := m.NodeAWG(n.ID); ok {
+			switch {
+			case !awg.Running && !st.awgDownAlerted:
+				st.awgDownAlerted = true
+				msg := fmt.Sprintf(i18n.T(lang, "notify.nodeAWGDown"), nodeLabel(n))
+				if awg.Err != "" {
+					msg += "\n" + escHTML(awg.Err)
+				}
+				out = append(out, nodeAlertMsg{model.AdminEventXrayDown, msg})
+			case awg.Running && st.awgDownAlerted:
+				st.awgDownAlerted = false
+				out = append(out, nodeAlertMsg{model.AdminEventXrayDown,
+					fmt.Sprintf(i18n.T(lang, "notify.nodeAWGBack"), nodeLabel(n))})
+			}
+		}
+	} else {
+		// The lane was switched off. Forget the alarm so switching it back on later
+		// starts clean rather than believing the operator was already told.
+		st.awgDownAlerted = false
+	}
 
 	// A changed fingerprint on a CA-signed cert is a renewal that landed. Self-signed
 	// is the agent's fallback while ACME is unavailable, not an event: it changes on

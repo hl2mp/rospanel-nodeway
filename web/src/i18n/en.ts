@@ -194,6 +194,8 @@ const en: Dict = {
     badDirectStrategy: "Unknown DNS strategy for the direct egress: {{value}}",
     extNameLong: "The name is too long",
     extNameCharset: "The name cannot contain line breaks",
+    extIdentityInvalid:
+      "{{field}}: up to {{max}} characters, no control or non-Latin characters",
     extSourceInvalid: "The source is not usable: {{err}}",
     extNotFound: "Subscription not found",
     extSyncFailed: "Could not read the subscription: {{err}}",
@@ -860,6 +862,7 @@ const en: Dict = {
   },
 
   overview: {
+    reconnecting: "Connection to the panel lost — reconnecting. The numbers below are the last ones received.",
     activeUsers: "Active",
     online: "Online",
     trafficToday: "Traffic today",
@@ -1530,6 +1533,15 @@ const en: Dict = {
   // and not there.
 
   health: {
+    awgHint:
+      "The lane is switched on but its tunnel is not running, so nobody can connect through it — while the panel keeps handing out keys and configs for it. Check this server's log and that the AmneziaWG port is open.",
+    awg: "AmneziaWG",
+    awgOK: "the tunnel is up",
+    awgDown: "the tunnel is not up",
+    awgFailed: "the tunnel did not come up: {{err}}",
+    awgUnknown: "the node does not report the tunnel's state",
+    nodeAWGHint:
+      "The lane is switched on for this server but its tunnel is not running, so nobody can connect through it — while the panel keeps handing out keys and configs for it. Check the node's log and that the AmneziaWG port is open.",
     xray: "Xray proxy engine",
     xrayDown: "the process is not running",
     xrayDownHint:
@@ -1651,6 +1663,7 @@ const en: Dict = {
   },
 
   logs: {
+    reconnecting: "Stream lost — reconnecting.",
     all: "All",
     access: "Access",
     info: "Info",
@@ -2604,6 +2617,18 @@ const en: Dict = {
   },
 
   external: {
+    editTitle: "Edit “{{name}}”",
+    updated: "Re-read: {{total}} servers",
+    identity: "Who we look like to them",
+    identityHint:
+      "Panels that require device binding refuse a caller that does not identify one. Leave these empty and the panel fills its own: an id derived from the source (the same on every sync, so their side binds one slot instead of a new one per refresh), this build's version, and a plain rospanel user agent. Fill one in only when the other side expects a particular value.",
+    identityDefault: "this build's version",
+    hwid: "Device id",
+    hwidAuto: "derived from the source",
+    userAgent: "User agent",
+    deviceOS: "Device OS",
+    osVersion: "OS version",
+    deviceModel: "Device model",
     title: "External subscriptions",
     hint: "Servers of other providers that the panel hands to users beside its own. The panel holds nothing on them — it only decides who gets them (access groups).",
     add: "Add subscription",

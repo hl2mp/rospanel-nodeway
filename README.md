@@ -421,7 +421,11 @@ coin: another provider's servers, read from their subscription, **handed to your
 your own. The source is a link, a `happ://crypt…` link or a pasted list; a link is re-read every
 hour, every server switches on and off on its own, and who gets them is decided by the same
 **access groups** as your own lanes. The panel holds nothing on those servers — it only decides
-who is told about them.
+who is told about them. A provider that requires **device binding** would refuse a caller that
+does not identify one, so the panel presents a device: an id derived from the source — the same
+on every read, so their side binds one slot rather than a new one per refresh — plus this build's
+version and a plain user agent. Every one of those is an editable default, for the case the
+other side expects particular values.
 
 #### 🌐 Server network (multi-node)
 
@@ -596,7 +600,7 @@ working service is the one failure this must not have.
 
 #### 🧰 Operations and security
 
-**Diagnostics** in one click: the Xray process, config application, TLS expiry, disk space, geo
+**Diagnostics** in one click: the Xray process, the AmneziaWG tunnel, config application, TLS expiry, disk space, geo
 database freshness, egress health — every check with a hint. A separate **connection self-test**
 connects to each protocol as a real client and confirms traffic actually goes out — catching
 credential, TLS or ALPN drift before a user does. **Backup / restore** and reset are available

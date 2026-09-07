@@ -48,11 +48,14 @@ func (m *Manager) NodeHealth(id int64) (*HealthReport, error) {
 	// Everything below describes the node's last report. When it has never
 	// connected there is nothing to describe, so the link check stands alone.
 	if n.Joined() {
-		checks = append(checks,
-			nodeXrayHealth(n),
-			m.nodeConfigHealth(n, online),
-			nodeCertHealth(n),
-		)
+		checks = append(checks, nodeXrayHealth(n), m.nodeConfigHealth(n, online))
+		// With the config it is part of, matching the master's own report — the two
+		// views are read by the same person and should not order the same facts
+		// differently.
+		if awgEnabledOn(n) {
+			checks = append(checks, m.nodeAWGHealth(n))
+		}
+		checks = append(checks, nodeCertHealth(n))
 		// The machine itself, as the node reported it. An agent older than this
 		// feature sends nothing, so the rows are omitted rather than shown as zeros.
 		if h, ok := m.NodeHostStats(n.ID); ok {
@@ -90,6 +93,41 @@ func (m *Manager) nodeLinkHealth(n *model.Node, now int64, online bool) HealthCh
 			DetailKey: "health.nodeOffline", HintKey: "health.nodeOfflineHint",
 			Args: map[string]any{"ago": humanDuration(now - n.LastSeen)}}
 	}
+}
+
+// awgEnabledOn reports whether the AmneziaWG lane is on for this node — its own
+// answer when it has one, otherwise the master's, which is the same inheritance the
+// config generator applies.
+func awgEnabledOn(n *model.Node) bool {
+	return n.AWGEnabled != nil && *n.AWGEnabled
+}
+
+// nodeAWGHealth reports what the node last said about its tunnel.
+//
+// The gap this closes: the agent applies the tunnel, and a failure went into the
+// node's own log and no further. The panel kept the server green, kept handing out
+// AWG keys and configs for it, and the operator found out from the users.
+func (m *Manager) nodeAWGHealth(n *model.Node) HealthCheck {
+	const label = "health.awg"
+	st, ok := m.NodeAWG(n.ID)
+	if !ok {
+		// The node has never mentioned AWG: an agent older than this feature. Say so
+		// rather than guessing — "unknown" is honest and "down" would be a false alarm
+		// on every node mid-upgrade.
+		return HealthCheck{Key: "awg", LabelKey: label, Status: healthWarn,
+			DetailKey: "health.awgUnknown", HintKey: "health.nodeUpdateHint"}
+	}
+	if st.Running {
+		return HealthCheck{Key: "awg", LabelKey: label, Status: healthOK,
+			DetailKey: "health.awgOK"}
+	}
+	if st.Err != "" {
+		return HealthCheck{Key: "awg", LabelKey: label, Status: healthError,
+			DetailKey: "health.awgFailed", HintKey: "health.nodeAWGHint",
+			Args: map[string]any{"err": st.Err}}
+	}
+	return HealthCheck{Key: "awg", LabelKey: label, Status: healthError,
+		DetailKey: "health.awgDown", HintKey: "health.nodeAWGHint"}
 }
 
 func nodeXrayHealth(n *model.Node) HealthCheck {
