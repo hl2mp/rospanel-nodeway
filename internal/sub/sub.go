@@ -3,9 +3,12 @@
 package sub
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"html/template"
+	"net/url"
 	"strings"
 
 	"github.com/AppsGanin/rospanel/internal/i18n"
@@ -87,21 +90,21 @@ func ShareLinksAll(u model.User, servers []Server) []string {
 		links = append(links, ShareLinks(u, srv)...)
 	}
 
-	// // 1. Вычисляем SHA-256 хеш (возвращает [32]byte)
-	// hash := sha256.Sum256([]byte(u.UUID))
-	// // 2. Кодируем полученные байты в hex-строку
-	// result := hex.EncodeToString(hash[:])
+	// 1. Вычисляем SHA-256 хеш (возвращает [32]byte)
+	hash := sha256.Sum256([]byte(u.UUID))
+	// 2. Кодируем полученные байты в hex-строку
+	result := hex.EncodeToString(hash[:])
 
-	// links = append(links, "#name: ☁️ Nodeway - VPN\n#refresh: 1h")
+	links = append(links, "#name: ☁️ Nodeway - VPN\n#refresh: 1h")
 
-	// //links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$Обход списков (JI) #RU")
-	// links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/nodeway#"+result+"$Обход списков (JI) #UK")
+	//links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$Обход списков (JI) #RU")
+	//links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/nodeway#"+result+"$Обход списков (JI) #UK")
 
-	// links = append(links, "olcrtc://wbstream?vp8channel<vp8-fps=60&vp8-batch=64>@hl2mpru#"+result+"$Обход списков (WB) #RU")
-	// links = append(links, "olcrtc://wbstream?vp8channel<vp8-fps=60&vp8-batch=64>@nodeway#"+result+"$Обход списков (WB) #UK")
+	links = append(links, "olcrtc://wbstream?vp8channel<vp8-fps=60&vp8-batch=64>@hl2mpru#"+result+"$Обход списков (WB) #RU")
+	//links = append(links, "olcrtc://wbstream?vp8channel<vp8-fps=60&vp8-batch=64>@nodeway#"+result+"$Обход списков (WB) #UK")
 
-	// links = append(links, "olcrtc://telemost?vp8channel<vp8-fps=60&vp8-batch=64>@07339722921845#"+result+"$Обход списков (YA) #RU")
-	// links = append(links, "olcrtc://telemost?vp8channel<vp8-fps=60&vp8-batch=64>@25012798234647#"+result+"$Обход списков (YA) #UK")
+	links = append(links, "olcrtc://telemost?vp8channel<vp8-fps=60&vp8-batch=64>@07339722921845#"+result+"$Обход списков (YA) #RU")
+	//links = append(links, "olcrtc://telemost?vp8channel<vp8-fps=60&vp8-batch=64>@25012798234647#"+result+"$Обход списков (YA) #UK")
 
 	return links
 }
@@ -130,6 +133,7 @@ type DeepLink struct {
 // DeepLinks builds best-effort import deep-links for the popular clients, most
 // popular first. Schemes drift across client releases — verify periodically.
 func DeepLinks(subURL string, lang i18n.Lang) []DeepLink {
+	enc := url.QueryEscape(subURL)
 	allTV := i18n.T(lang, "sub.allPlusTV")
 	//wireTurnURL := encodeWireTurn(subURL)
 	return []DeepLink{
@@ -137,7 +141,8 @@ func DeepLinks(subURL string, lang i18n.Lang) []DeepLink {
 		{"INCY", allTV, template.URL("incy://import/" + subURL)},
 		{"v2RayTun", allTV, template.URL("v2raytun://import/" + subURL)},
 		{"Streisand", "iOS · macOS · tvOS", template.URL("streisand://import/" + subURL)},
-		//{"WireTurn - Обход списков (БС)", "Android", template.URL("wireturn://" + wireTurnURL)},
+		//{"WireTurn", "Обход БС только Android", template.URL("wireturn://" + wireTurnURL)},
+		{"Owenclave", "Обход БС только Android", template.URL("owenclave://add-subscription?url=" + enc + "&hwid=1")},
 	}
 }
 
