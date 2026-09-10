@@ -1,5 +1,43 @@
 # Changelog
 
+## [3.1.0](https://github.com/AppsGanin/rospanel/compare/v3.0.0...v3.1.0) (2026-09-10)
+
+
+### Features
+
+* **awg:** AmneziaWG 3.1 ([59d9a9f](https://github.com/AppsGanin/rospanel/commit/59d9a9ff128c0698718f8a23e70a4ca9020a3458))
+* **awg:** imitate a real protocol ahead of the handshake ([b14c81d](https://github.com/AppsGanin/rospanel/commit/b14c81d5d4867428de497b3712b078d25f2d099a))
+
+
+### Bug Fixes
+
+* **awg:** the panel says which protocol a server imitates ([f957d81](https://github.com/AppsGanin/rospanel/commit/f957d810e83bcc298d61c92ab4a17d887a2fece2))
+* **conn:** the obfuscation summary shows the whole 3.1 parameter set ([4a31102](https://github.com/AppsGanin/rospanel/commit/4a31102c1d99973601e346c7916b2f5ca515ce86))
+* **i18n:** shorten the AmneziaWG settings hint ([d1184f6](https://github.com/AppsGanin/rospanel/commit/d1184f6880cedd66ae82494cc564d0d83cb431fd))
+* **overview:** recent events carry a date, not just a clock ([5e69b62](https://github.com/AppsGanin/rospanel/commit/5e69b62520ec1d551a0b36aae8fb8ead41692698))
+
+## [3.0.0](https://github.com/AppsGanin/rospanel/compare/v2.14.2...v3.0.0) (2026-09-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* the connection policy no longer refuses networks by ASN. The "forbidden networks" list is gone from the settings page and from the model, so an operator who had one configured is no longer enforcing it — the country rule is what remains. The stored value is ignored on load and dropped on the next save; blocks already recorded under the ASN reason keep their label, so the history still reads correctly.
+
+### Features
+
+* **abuse:** keep blocklist matches for 30 days ([4fd715b](https://github.com/AppsGanin/rospanel/commit/4fd715ba98775bd54a4aaf09a2b1d42c4644428c))
+* **core:** reduce long-poll hold interval to 20s ([bf128bf](https://github.com/AppsGanin/rospanel/commit/bf128bf2a15219fc9e619562477c6870ef4c41a0))
+* the console redesign ([e30ea13](https://github.com/AppsGanin/rospanel/commit/e30ea1384ec6fb142b85f2942236eb9ea75b19d4))
+
+
+### Bug Fixes
+
+* **audit:** skip journal rows on no-op user edits ([1e640b6](https://github.com/AppsGanin/rospanel/commit/1e640b6805a342d7bb2e840834b093390fbce4a9))
+* **i18n:** restore the health hint for a stale panel ([561480e](https://github.com/AppsGanin/rospanel/commit/561480e7593fcfd3cb499f05e2eee84851d1c178))
+* **stats:** say which window each report on the page covers ([c982c69](https://github.com/AppsGanin/rospanel/commit/c982c69c3d17cd4b84295328355d67f125d52aea))
+* **ui:** indicate unsaved egress toggle state in status badges ([3e46622](https://github.com/AppsGanin/rospanel/commit/3e466224f1e1f7193bcb02d25db8f588d136462e))
+* **users:** a traffic reset restarts the quota cycle ([5b30a16](https://github.com/AppsGanin/rospanel/commit/5b30a161f487b5651e28961686f4d43ea17decb4))
+
 ## [2.14.2](https://github.com/AppsGanin/rospanel/compare/v2.14.1...v2.14.2) (2026-09-09)
 
 

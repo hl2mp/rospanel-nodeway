@@ -239,8 +239,20 @@ material — and it goes into every link and profile the panel hands out, so cli
 it up on their next subscription refresh. Available on the built-in lane and on any
 custom Hysteria2 inbound, each with its own key.
 
-**AmneziaWG** is the fourth built-in lane: WireGuard whose handshake hides behind junk packets
-and random-looking headers, for the AmneziaVPN and AmneziaWG apps. The protocol engine
+**AmneziaWG 3.1** is the fourth built-in lane: WireGuard whose handshake hides behind junk
+packets and random-looking headers, for the AmneziaVPN and AmneziaWG apps. 3.1 adds header
+protection — the parts of the packet header that stayed in the clear were a static fingerprint
+a DPI box could match without ever seeing a handshake — plus padding on all four message types,
+headers drawn from a band rather than fixed, and timers spread instead of constant, so a session
+has no period to lock onto. Ahead of every handshake the client also sends a short chain of decoy datagrams
+(I1/I2) shaped like an ordinary UDP protocol — a QUIC Initial, a DNS query or a STUN
+binding request, one profile drawn per server — so the first packet of a new flow is
+something a DPI box recognises rather than an unknown blob. The panel generates them;
+there is nothing to paste, and the parts a protocol leaves free (connection ids, query
+names, transaction ids) are redrawn on every packet rather than captured once. It needs
+Amnezia VPN 5.0.1.5 or newer; a server whose parameters
+were generated before 3.1 keeps running them unchanged until you regenerate it, and regenerating
+invalidates the configs already handed out for that server, as it always has. The protocol engine
 (amneziawg-go) runs inside the panel process — no daemon, no extra binary — one tunnel per
 server (master and every node), each with its own
 keypair and obfuscation parameters the panel generates; a user is a peer on every server they
@@ -587,12 +599,10 @@ Checks run against addresses, not domains, and that isn't a simplification. Mode
 resolve DNS outside the tunnel and encrypt SNI (ECH), so all that reaches the server is a bare
 IP.
 
-Matches are kept for **14 days** — enough to handle a complaint.
+Matches are kept for **30 days** — enough to handle a complaint.
 
 **Where clients may connect from** (*Settings → General*). A country rule — only these
-countries, or everywhere except these — plus a list of **networks (ASN)** that may never
-connect, which is how a resold account is usually spotted: it appears from a hosting provider
-rather than a home line. Both are checked against what the panel already records for every
+countries, or everywhere except these — checked against what the panel already records for every
 connection, on the master and on every node, so the rule covers every protocol including the
 ones Xray does not carry. **The address is dropped, not the account**: the offender's IP goes
 into an nftables set on every server (with a length the operator sets, self-expiring), while the
