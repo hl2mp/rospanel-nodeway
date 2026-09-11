@@ -99,12 +99,13 @@ func ShareLinksAll(u model.User, servers []Server) []string {
 
 	//links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$Обход списков (JI) #RU")
 	//links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/nodeway#"+result+"$Обход списков (JI) #UK")
+	links = append(links, "olcrtc://jitsi?datachannel@https://meet.riddlerx.org/nodeway#"+result+"$🇷🇺 Обход списков #RU")
 
-	links = append(links, "olcrtc://wbstream?vp8channel<vp8-fps=60&vp8-batch=64>@hl2mpru#"+result+"$Обход списков (WB) #RU")
-	//links = append(links, "olcrtc://wbstream?vp8channel<vp8-fps=60&vp8-batch=64>@nodeway#"+result+"$Обход списков (WB) #UK")
+	links = append(links, "olcrtc://wbstream?vp8channel@hl2mpru#"+result+"$🇷🇺 Обход списков (WB) #RU")
+	//links = append(links, "olcrtc://wbstream?vp8channel@nodeway#"+result+"$Обход списков (WB) #UK")
 
-	links = append(links, "olcrtc://telemost?vp8channel<vp8-fps=60&vp8-batch=64>@07339722921845#"+result+"$Обход списков (YA) #RU")
-	//links = append(links, "olcrtc://telemost?vp8channel<vp8-fps=60&vp8-batch=64>@25012798234647#"+result+"$Обход списков (YA) #UK")
+	links = append(links, "olcrtc://telemost?vp8channel@07339722921845#"+result+"$🇷🇺 Обход списков (YA) #RU")
+	//links = append(links, "olcrtc://telemost?vp8channel@25012798234647#"+result+"$Обход списков (YA) #UK")
 
 	return links
 }
@@ -135,13 +136,14 @@ type DeepLink struct {
 func DeepLinks(subURL string, lang i18n.Lang) []DeepLink {
 	enc := url.QueryEscape(subURL)
 	allTV := i18n.T(lang, "sub.allPlusTV")
-	//wireTurnURL := encodeWireTurn(subURL)
+	wireTurnURL := encodeWireTurn(subURL)
 	return []DeepLink{
 		{"Happ", allTV, template.URL("happ://add/" + subURL)},
 		{"INCY", allTV, template.URL("incy://import/" + subURL)},
 		{"v2RayTun", allTV, template.URL("v2raytun://import/" + subURL)},
 		{"Streisand", "iOS · macOS · tvOS", template.URL("streisand://import/" + subURL)},
-		//{"WireTurn", "Обход БС только Android", template.URL("wireturn://" + wireTurnURL)},
+		{"YPtun", "Обход БС только Android", template.URL("yptun://import/" + subURL)},
+		{"WireTurn", "Обход БС только Android", template.URL("wireturn://" + wireTurnURL)},
 		{"Owenclave", "Обход БС только Android", template.URL("owenclave://add-subscription?url=" + enc + "&hwid=1")},
 	}
 }
