@@ -482,7 +482,7 @@
         align-items: center;
         padding: 12px 14px;
         border-radius: 12px;
-        background: color-mix(in srgb, var(--brand) 12%, transparent);
+        background: rgba(8, 145, 178, 0.12);
         color: var(--accent-fg);
         font-weight: 700;
         text-decoration: none;
@@ -585,6 +585,19 @@
               ><span class="plat">{{$d.Platform}}</span></a
             >{{end}}
           </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="modal-head">
+          <b>Загрузить приложение</b>
+        </div>
+        <div class="apps">
+          <button class="btn" onclick="window.open('https://github.com/yanisplugg/olcvpn-client/releases/download/v3.5.0/YPtun-v3.5.0-arm64-v8a.apk', '_blank')">
+            YPtun · Android
+          </button>
+          <button class="btn" onclick="window.open('https://apps.apple.com/us/app/proofkit-vpn/id6795355210?l=ru', '_blank')">
+            Proofkit · iOS
+          </button>
         </div>
       </div>
       {{if .Devices.Show}}
