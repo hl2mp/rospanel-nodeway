@@ -24,7 +24,9 @@ import (
 func ShareLinks(u model.User, srv Server) []string {
 	set := srv.Set
 	links := make([]string, 0, 3+len(srv.Custom))
+
 	if set.VLESSEnabled && srv.allowsBuiltin(model.LaneVLESS) {
+		set.VLESSName = "#" + set.VLESSName
 		links = append(links, link.VLESS(u, set))
 	}
 	// A REALITY lane with no public key cannot be dialled: the key is what the client
@@ -32,9 +34,11 @@ func ShareLinks(u model.User, srv Server) []string {
 	// switched on. A node added before its keys landed would otherwise hand out a link
 	// with an empty pbk — one that fails with no message a user could act on.
 	if set.RealityEnabled && set.RealityPublicKey != "" && srv.allowsBuiltin(model.LaneReality) {
+		set.RealityName = "#" + set.RealityName
 		links = append(links, link.Reality(u, set))
 	}
 	if set.HysteriaEnabled && srv.allowsBuiltin(model.LaneHysteria) {
+		set.HysteriaName = "#" + set.HysteriaName
 		links = append(links, link.Hysteria2(u, set))
 	}
 	for _, in := range srv.Custom {
@@ -97,14 +101,14 @@ func ShareLinksAll(u model.User, servers []Server) []string {
 	// 2. Кодируем полученные байты в hex-строку
 	result := hex.EncodeToString(hash[:])
 
-	links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$Обход списков (RT) #RU")
-	links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/nodeway#"+result+"$Обход списков (RT) #UK")
+	links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$#RU Обход списков (RT)")
+	links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/nodeway#"+result+"$#UK Обход списков (RT)")
 
-	links = append(links, "olcrtc://wbstream?vp8channel@hl2mpru#"+result+"$Обход списков (WB) #RU")
-	links = append(links, "olcrtc://wbstream?vp8channel@nodeway#"+result+"$Обход списков (WB) #UK")
+	links = append(links, "olcrtc://wbstream?vp8channel@hl2mpru#"+result+"$#RU Обход списков (WB)")
+	links = append(links, "olcrtc://wbstream?vp8channel@nodeway#"+result+"$#UK Обход списков (WB)")
 
-	//links = append(links, "olcrtc://telemost?vp8channel@07339722921845#"+result+"$Обход списков (YA) #RU")
-	//links = append(links, "olcrtc://telemost?vp8channel@25012798234647#"+result+"$Обход списков (YA) #UK")
+	//links = append(links, "olcrtc://telemost?vp8channel@07339722921845#"+result+"$#RU Обход списков (YA)")
+	//links = append(links, "olcrtc://telemost?vp8channel@25012798234647#"+result+"$#UK Обход списков (YA)")
 
 	return links
 }
