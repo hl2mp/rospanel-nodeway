@@ -579,6 +579,9 @@
           <div class="modal-head">
             <b>{{.L.OpenInApp}}</b>
           </div>
+          <p class="muted" style="text-align: center; margin: 8px">
+              Метка «Обход БС» — поддержка работы в белых списках
+          </p>
           <div class="apps">
             {{range $i, $d := .DeepLinks}}<a class="app" href="{{$d.Href}}" data-i="{{$i}}" onclick="return appClick(event)"
               ><span>{{$d.Label}}</span
