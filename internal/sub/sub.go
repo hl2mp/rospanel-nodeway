@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"html/template"
+	"net/url"
 	"strings"
 
 	"github.com/AppsGanin/rospanel/internal/i18n"
@@ -137,7 +138,7 @@ type DeepLink struct {
 // DeepLinks builds best-effort import deep-links for the popular clients, most
 // popular first. Schemes drift across client releases — verify periodically.
 func DeepLinks(subURL string, lang i18n.Lang) []DeepLink {
-	//enc := url.QueryEscape(subURL)
+	enc := url.QueryEscape(subURL)
 	allTV := i18n.T(lang, "sub.allPlusTV")
 	//wireTurnURL := encodeWireTurn(subURL)
 	return []DeepLink{
@@ -147,6 +148,7 @@ func DeepLinks(subURL string, lang i18n.Lang) []DeepLink {
 		{"INCY", allTV, template.URL("incy://import/" + subURL)},
 		//{"v2RayTun", allTV, template.URL("v2raytun://import/" + subURL)},
 		{"Streisand", "iOS · macOS · tvOS", template.URL("streisand://import/" + subURL)},
+		{"Olcbox", "Обход БС · Android", template.URL("olcbox://add?url=" + enc)},
 
 		//{"WireTurn", "Обход БС · Android", template.URL("wireturn://" + wireTurnURL)},
 		//{"Owenclave", "Обход БС · Android", template.URL("owenclave://add-subscription?url=" + enc + "&hwid=1")},
