@@ -594,21 +594,11 @@
         <div class="modal-head">
           <b>Загрузить приложение</b>
         </div>
-        <script>
-          function downloadAndroidApk(url) {
-            if (window.Telegram && window.Telegram.WebApp) {
-              // Инструктируем Telegram открыть ссылку строго в системном браузере
-              window.Telegram.WebApp.openLink(url, { try_instant_view: false });
-            } else {
-              window.open(url, '_blank');
-            }
-          }
-        </script>
         <div class="apps">
-          <button class="btn" onclick="downloadAndroidApk('https://github.com/yanisplugg/olcvpn-client/releases/download/v3.5.2/YPtun-v3.5.2-arm64-v8a.apk')">
+          <button class="btn" onclick="Telegram.WebApp.openLink('http://hl2mp.ru/files/android/index.php?app=yptun')">
             YPtun · Android
           </button>
-          <button class="btn" onclick="downloadAndroidApk('https://github.com/hl2mp/olcbox-nodeway/releases/download/14.09.2026/Olcbox-1.0.128-android-arm64-v8a-release.apk')">
+          <button class="btn" onclick="Telegram.WebApp.openLink('http://hl2mp.ru/files/android/index.php?app=olcbox')">
             Olcbox · Android
           </button>
           <button class="btn" onclick="Telegram.WebApp.openLink('https://apps.apple.com/us/app/proofkit-vpn/id6795355210?l=ru')">
