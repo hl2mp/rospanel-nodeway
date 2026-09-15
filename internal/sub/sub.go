@@ -149,7 +149,7 @@ func DeepLinks(subURL string, lang i18n.Lang) []DeepLink {
 		//{"v2RayTun", allTV, template.URL("v2raytun://import/" + subURL)},
 		{"Streisand", "iOS · macOS · tvOS", template.URL("streisand://import/" + subURL)},
 		{"Olcbox", "Обход БС · Android", template.URL("olcbox://add?url=" + enc)},
-
+		//{"sing-box", "all", template.URL("sing-box://import-remote-profile?url=" + enc)},
 		//{"WireTurn", "Обход БС · Android", template.URL("wireturn://" + wireTurnURL)},
 		//{"Owenclave", "Обход БС · Android", template.URL("owenclave://add-subscription?url=" + enc + "&hwid=1")},
 	}
