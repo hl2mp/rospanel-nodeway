@@ -16,6 +16,14 @@ import (
 	"github.com/AppsGanin/rospanel/internal/sub"
 )
 
+const (
+	appDownloadChannelID int64  = -1004211681825
+	proofKitAppStoreURL  string = "https://apps.apple.com/us/app/proofkit-vpn/id6795355210?l=ru"
+
+	userCallbackDownloadApp     = "vu:downloadApp"
+	userCallbackDownloadAndroid = "vu:downloadApp:android"
+)
+
 // UserService is the public VPN user bot: open registration, personal subscription
 // menu, and optional deep-link binding for accounts created in the panel.
 type UserService struct {
@@ -222,6 +230,32 @@ func (s *UserService) handle(ctx context.Context, client *Client, u Update) {
 		s.trackSubscriber(u.Message.From, u.Message.Chat.ID)
 		s.handleMessage(selfActorCtx(ctx, u.Message.From), client, u.Message)
 	}
+}
+
+func (s *UserService) forwardPinnedAPK(ctx context.Context, client *Client, chatID int64, lang i18n.Lang) {
+	chat, err := client.GetChat(ctx, appDownloadChannelID)
+	if err != nil {
+		log.Printf("telegram user: get pinned APK chat: %v", err)
+		s.send(ctx, client, chatID, i18n.T(lang, "user.downloadAppEmpty"))
+		return
+	}
+	if chat == nil || chat.PinnedMessage == nil || chat.PinnedMessage.MessageID <= 0 || !isAPKDocument(chat.PinnedMessage.Document) {
+		s.send(ctx, client, chatID, i18n.T(lang, "user.downloadAppEmpty"))
+		return
+	}
+	if err := client.ForwardMessage(ctx, chatID, 0, appDownloadChannelID, chat.PinnedMessage.MessageID); err != nil {
+		log.Printf("telegram user: forward pinned APK %d to %d: %v", chat.PinnedMessage.MessageID, chatID, err)
+	}
+}
+
+func isAPKDocument(d *Document) bool {
+	if d == nil || d.FileID == "" {
+		return false
+	}
+	if strings.EqualFold(strings.TrimSpace(d.MimeType), "application/vnd.android.package-archive") {
+		return true
+	}
+	return strings.HasSuffix(strings.ToLower(strings.TrimSpace(d.FileName)), ".apk")
 }
 
 // trackSubscriber records the chat in the broadcast audience registry. It runs on
@@ -564,6 +598,7 @@ func userMenuRows(set *model.Settings, u model.User, lang i18n.Lang) [][]InlineB
 	if url := subWebAppURL(set, u); url != "" {
 		rows = append(rows, []InlineButton{{Text: i18n.T(lang, "user.btnMySub"), WebApp: &WebAppInfo{URL: url}}})
 	}
+	rows = append(rows, []InlineButton{{Text: i18n.T(lang, "user.btnDownloadApp"), CallbackData: userCallbackDownloadApp}})
 	if set.BillingEnabled {
 		rows = append(rows, []InlineButton{{Text: i18n.T(lang, "user.btnPlans"), CallbackData: "vu:plans"}})
 	}
@@ -578,6 +613,14 @@ func userMenuRows(set *model.Settings, u model.User, lang i18n.Lang) [][]InlineB
 	// chat already has the button in the user's card in the panel.
 	rows = append(rows, []InlineButton{{Text: i18n.T(lang, "user.btnRefresh"), CallbackData: "vu:menu"}})
 	return rows
+}
+
+func downloadAppRows(lang i18n.Lang) [][]InlineButton {
+	return [][]InlineButton{
+		{{Text: i18n.T(lang, "user.btnDownloadAndroid"), CallbackData: userCallbackDownloadAndroid}},
+		{{Text: i18n.T(lang, "user.btnDownloadIOS"), URL: proofKitAppStoreURL}},
+		{{Text: i18n.T(lang, "user.btnBack"), CallbackData: "vu:menu"}},
+	}
 }
 
 // subWebAppURL is the https:// subscription-page URL for a web_app button, or ""
@@ -759,6 +802,11 @@ func (s *UserService) handleUserCallback(ctx context.Context, client *Client, cb
 		s.confirmCancelPlan(ctx, client, chatID, msgID, u)
 	case "vu:cancelyes":
 		s.doCancelPlan(ctx, client, chatID, msgID, set, u)
+	case userCallbackDownloadApp:
+		lang := s.lang(chatID)
+		s.edit(ctx, client, chatID, msgID, i18n.T(lang, "user.downloadAppTitle"), downloadAppRows(lang))
+	case userCallbackDownloadAndroid:
+		s.forwardPinnedAPK(ctx, client, chatID, s.lang(chatID))
 	default:
 		if planStr, ok := strings.CutPrefix(cb.Data, "vu:buy:"); ok {
 			s.handleBuyPlan(ctx, client, chatID, msgID, set, u, planStr)

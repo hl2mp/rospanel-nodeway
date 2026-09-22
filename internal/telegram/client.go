@@ -132,7 +132,7 @@ func (m *Message) Body() string {
 	return m.Caption
 }
 
-// PhotoSize / Document carry the file_id Telegram assigns to an uploaded file.
+// PhotoSize / Document carry file metadata Telegram assigns to an uploaded file.
 // Re-sending by that id costs no upload, which is the difference between one
 // transfer and one per recipient when the same image goes out to a whole audience.
 type PhotoSize struct {
@@ -141,7 +141,9 @@ type PhotoSize struct {
 	Height int    `json:"height"`
 }
 type Document struct {
-	FileID string `json:"file_id"`
+	FileID   string `json:"file_id"`
+	FileName string `json:"file_name"`
+	MimeType string `json:"mime_type"`
 }
 
 // MediaFileID returns the id of the file this message carries, or "" when it has
@@ -172,7 +174,7 @@ type CallbackQuery struct {
 	Data    string   `json:"data"`
 }
 
-// User / Chat carry only the identifiers the bot needs.
+// User / Chat carry the identifiers and chat metadata the bot needs.
 type User struct {
 	ID        int64  `json:"id"`
 	IsBot     bool   `json:"is_bot"`
@@ -184,10 +186,11 @@ type User struct {
 	LangCode string `json:"language_code"`
 }
 type Chat struct {
-	ID      int64  `json:"id"`
-	Type    string `json:"type"`     // "private" | "group" | "supergroup" | "channel"
-	Title   string `json:"title"`    // group name (empty for private chats)
-	IsForum bool   `json:"is_forum"` // supergroup with Topics enabled
+	ID            int64    `json:"id"`
+	Type          string   `json:"type"`     // "private" | "group" | "supergroup" | "channel"
+	Title         string   `json:"title"`    // group name (empty for private chats)
+	IsForum       bool     `json:"is_forum"` // supergroup with Topics enabled
+	PinnedMessage *Message `json:"pinned_message"`
 }
 
 // ChatMember is the subset of a member record the support-group check reads: the
@@ -504,8 +507,7 @@ func (c *Client) PinChatMessage(ctx context.Context, chatID, messageID int64) er
 	}, nil)
 }
 
-// GetChat returns a chat's record — the support-group check reads Type and IsForum
-// from it.
+// GetChat returns a chat's record, including pinned_message when Telegram provides it.
 func (c *Client) GetChat(ctx context.Context, chatID int64) (*Chat, error) {
 	var ch Chat
 	if err := c.call(ctx, "getChat", map[string]any{"chat_id": chatID}, &ch); err != nil {
