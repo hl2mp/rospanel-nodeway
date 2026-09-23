@@ -102,14 +102,14 @@ func ShareLinksAll(u model.User, servers []Server) []string {
 	// 2. Кодируем полученные байты в hex-строку
 	result := hex.EncodeToString(hash[:])
 
-	links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$#RU Обход списков (RT)")
-	links = append(links, "olcrtc://jitsi?datachannel@https://meet.mamba.group/nodeway#"+result+"$#UK Обход списков (MB)")
+	links = append(links, "olcrtc://jitsi?datachannel@https://meet.mamba.group/hl2mpru#"+result+"$#RU Обход списков (RT)")
+	//links = append(links, "olcrtc://jitsi?datachannel@https://meet.mamba.group/nodeway#"+result+"$#UK Обход списков (MB)")
 
 	links = append(links, "olcrtc://wbstream?vp8channel@hl2mpru#"+result+"$#RU Обход списков (WB)")
-	links = append(links, "olcrtc://wbstream?vp8channel@nodeway#"+result+"$#UK Обход списков (WB)")
+	//links = append(links, "olcrtc://wbstream?vp8channel@nodeway#"+result+"$#UK Обход списков (WB)")
 
 	links = append(links, "olcrtc://telemost?vp8channel@07339722921845#"+result+"$#RU Обход списков (YA)")
-	links = append(links, "olcrtc://telemost?vp8channel@25012798234647#"+result+"$#UK Обход списков (YA)")
+	//links = append(links, "olcrtc://telemost?vp8channel@25012798234647#"+result+"$#UK Обход списков (YA)")
 
 	return links
 }
