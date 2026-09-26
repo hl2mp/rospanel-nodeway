@@ -188,6 +188,9 @@ type Chat struct {
 	Type    string `json:"type"`     // "private" | "group" | "supergroup" | "channel"
 	Title   string `json:"title"`    // group name (empty for private chats)
 	IsForum bool   `json:"is_forum"` // supergroup with Topics enabled
+	// PinnedMessage is the message this chat has pinned, when it has one. Only
+	// returned by getChat.
+	PinnedMessage *Message `json:"pinned_message"`
 }
 
 // ChatMember is the subset of a member record the support-group check reads: the
@@ -525,6 +528,21 @@ func (c *Client) GetChatMember(ctx context.Context, chatID, userID int64) (*Chat
 		return nil, err
 	}
 	return &m, nil
+}
+
+// PinnedMessageID resolves the id of a chat's pinned message. The Bot API has no
+// "forward the pinned message" method, so forwarding by message id means looking
+// the id up first; an error here means the chat has nothing pinned, or the bot
+// cannot read it (it must be a member of the chat).
+func (c *Client) PinnedMessageID(ctx context.Context, chatID int64) (int64, error) {
+	ch, err := c.GetChat(ctx, chatID)
+	if err != nil {
+		return 0, err
+	}
+	if ch.PinnedMessage == nil || ch.PinnedMessage.MessageID == 0 {
+		return 0, fmt.Errorf("telegram: chat %d has no pinned message", chatID)
+	}
+	return ch.PinnedMessage.MessageID, nil
 }
 
 // SendDocument uploads a file to a chat as a document, with an optional caption.

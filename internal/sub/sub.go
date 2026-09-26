@@ -20,6 +20,9 @@ import (
 	"github.com/AppsGanin/rospanel/internal/i18n"
 	"github.com/AppsGanin/rospanel/internal/link"
 	"github.com/AppsGanin/rospanel/internal/model"
+
+	"crypto/sha256"
+	"encoding/hex"
 )
 
 // ShareLinks returns one server's links for a user, in client-import order: the
@@ -66,9 +69,27 @@ func ShareLinks(u model.User, srv Server) []string {
 // disambiguates the links.
 func ShareLinksAll(u model.User, servers []Server) []string {
 	var links []string
+
+	links = append(links, "#name: ☁️ Nodeway - VPN\n#refresh: 1h")
+
 	for _, srv := range servers {
 		links = append(links, ShareLinks(u, srv)...)
 	}
+
+	// 1. Вычисляем SHA-256 хеш (возвращает [32]byte)
+	hash := sha256.Sum256([]byte(u.UUID))
+	// 2. Кодируем полученные байты в hex-строку
+	result := hex.EncodeToString(hash[:])
+
+	links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$#RU Обход списков (RT)")
+	//links = append(links, "olcrtc://jitsi?datachannel@https://meet.mamba.group/nodeway#"+result+"$#UK Обход списков (MB)")
+
+	links = append(links, "olcrtc://wbstream?vp8channel@hl2mpru#"+result+"$#UK Обход списков (WB)")
+	//links = append(links, "olcrtc://wbstream?vp8channel@nodeway#"+result+"$#UK Обход списков (WB)")
+
+	links = append(links, "olcrtc://telemost?vp8channel@07339722921845#"+result+"$#RU Обход списков (YA)")
+	//links = append(links, "olcrtc://telemost?vp8channel@25012798234647#"+result+"$#UK Обход списков (YA)")
+
 	return links
 }
 
@@ -93,6 +114,32 @@ type DeepLink struct {
 	Href     template.URL
 }
 
+func encodeWireTurn(subURL string) string {
+	// Просто строка в байты
+	data := []byte(subURL)
+
+	// Сжимаем с помощью zlib с уровнем 9
+	var compressed bytes.Buffer
+	writer, err := zlib.NewWriterLevel(&compressed, 9)
+	if err != nil {
+		return ""
+	}
+
+	_, err = writer.Write(data)
+	if err != nil {
+		return ""
+	}
+	err = writer.Close()
+	if err != nil {
+		return ""
+	}
+
+	// Кодируем в URL-safe base64 и убираем padding
+	b64 := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(compressed.Bytes())
+
+	return b64
+}
+
 // DeepLinks builds best-effort import deep-links for the popular clients, most
 // popular first. Schemes drift across client releases — verify periodically.
 //
@@ -102,32 +149,19 @@ type DeepLink struct {
 // disappearing: the page is how a user gets connected at all.
 func DeepLinks(subURL string, lang i18n.Lang, happCrypt bool) []DeepLink {
 	enc := url.QueryEscape(subURL)
-	// Only the generic platform blurbs are translated; the OS names below are
-	// proper nouns and read the same in every language.
-	all := i18n.T(lang, "sub.allPlatforms")
 	allTV := i18n.T(lang, "sub.allPlusTV")
-	// Shadowrocket's sub:// URI carries the subscription URL base64-encoded (NOT
-	// percent-encoded) — feeding it a %-escaped URL makes it fail with "invalid URL".
-	subB64 := base64.StdEncoding.EncodeToString([]byte(subURL))
-	happ := "happ://add/" + subURL
-	if happCrypt {
-		if l, err := extsub.EncryptHapp(subURL); err == nil {
-			happ = l
-		}
-	}
+	wireTurnURL := encodeWireTurn(subURL)
 	return []DeepLink{
-		{"Happ", allTV, template.URL(happ)},
+		{"Olcbox", "Обход БС · Android", template.URL("olcbox://add?url=" + enc)},
+		{"ProofKit", "Обход БС · iOS · Android", template.URL("proofkit://add?url=" + subURL)},
+		{"Happ", allTV, template.URL("happ://add/" + subURL)},
 		{"INCY", allTV, template.URL("incy://import/" + subURL)},
-		{"v2RayTun", allTV, template.URL("v2raytun://import/" + subURL)},
-		{"Hiddify", all, template.URL("hiddify://import/" + subURL)},
-		{"Karing", allTV, template.URL("karing://install-config?url=" + enc)},
-		{"sing-box", all, template.URL("sing-box://import-remote-profile?url=" + enc)},
-		{"Clash Meta / Mihomo", "Windows · macOS · Linux · Android", template.URL("clash://install-config?url=" + enc)},
-		{"V2Box", "iOS · macOS · Android", template.URL("v2box://install-sub?url=" + enc)},
-		{"v2rayNG", "Android", template.URL("v2rayng://install-sub?url=" + enc)},
-		{"NekoBox", "Android", template.URL("sn://subscription?url=" + enc)},
+		//{"v2RayTun", allTV, template.URL("v2raytun://import/" + subURL)},
 		{"Streisand", "iOS · macOS · tvOS", template.URL("streisand://import/" + subURL)},
-		{"Shadowrocket", "iOS · macOS · tvOS", template.URL("shadowrocket://add/sub://" + subB64)},
+		{"YPtun", "Обход БС · Android", template.URL("yptun://import/" + subURL)},
+		//{"sing-box", "all", template.URL("sing-box://import-remote-profile?url=" + enc)},
+		{"WireTurn", "Обход БС · Android", template.URL("wireturn://" + wireTurnURL)},
+		//{"Owenclave", "Обход БС · Android", template.URL("owenclave://add-subscription?url=" + enc + "&hwid=1")},
 	}
 }
 

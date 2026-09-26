@@ -303,8 +303,10 @@ type SupportGroup struct {
 // chat isn't tied to an account.
 //
 // Active and OptOut mean different things and must not be conflated: Active=false is
-// Telegram refusing delivery (blocked or deactivated), OptOut=true is the person
-// choosing not to receive broadcasts while still getting service messages.
+// Telegram refusing delivery (blocked or deactivated), OptOut=true is the chat
+// excluded from broadcasts while still getting service messages. Nothing in the bot
+// sets OptOut any more — the /mailing command is gone — but the column stays: the
+// audience query still honours it, so chats that opted out earlier stay out.
 type Subscriber struct {
 	ChatID    int64  `json:"chat_id"`
 	UserID    int64  `json:"user_id"`

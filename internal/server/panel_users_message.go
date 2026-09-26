@@ -24,9 +24,8 @@ const (
 // because that surface reaches everyone at once.
 //
 // It also ignores tg_subscribers.opt_out on purpose. That flag means "no mass
-// mailings" — the bot tells people so when they use it — not "never contact me";
-// service messages and support replies are precisely what it promises will still
-// arrive.
+// mailings" — not "never contact me"; service messages and support replies are
+// precisely what it promises will still arrive.
 //
 // messageUser sends one message to one user's Telegram chat — a broadcast of one,
 // without the machinery: the operator wants to know right now whether it arrived,

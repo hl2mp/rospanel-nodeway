@@ -49,8 +49,11 @@ func (s *Store) SetSubscriberBlocked(chatID, at int64) error {
 	return err
 }
 
-// SetSubscriberOptOut records the /mailing choice. It inserts when the chat
-// isn't known yet, so an opt-out is never lost to a missing row.
+// SetSubscriberOptOut excludes a chat from broadcasts while leaving service messages
+// alone. The bot no longer offers this choice — nothing calls it from the user side —
+// but the flag is what the audience query reads, so the rows written while the command
+// existed keep working. It inserts when the chat isn't known yet, so the choice is
+// never lost to a missing row.
 func (s *Store) SetSubscriberOptOut(chatID int64, out bool, now int64) error {
 	_, err := s.db.Exec(
 		`INSERT INTO tg_subscribers (chat_id, opt_out, started_at) VALUES (?, ?, ?)

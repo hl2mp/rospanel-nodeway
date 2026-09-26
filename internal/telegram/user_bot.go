@@ -39,6 +39,12 @@ type UserService struct {
 	// successful sign-ups and does nothing for a chat that never succeeds.
 	rate     *chatLimiter
 	codeRate *chatLimiter
+
+	// pinnedMu guards the app channel's pinned-message id cache. The lookup is one
+	// API call and every user who taps "Android" would otherwise make it.
+	pinnedMu sync.Mutex
+	pinnedID int64
+	pinnedAt time.Time
 }
 
 // Open-registration rate limit: the user bot is public, and each sign-up creates a
@@ -273,13 +279,6 @@ func (s *UserService) handleMessage(ctx context.Context, client *Client, m *Mess
 		s.handleStart(ctx, client, set, chatID, args)
 		return
 	}
-	// Handled before the pending-state machine so an explicit command always wins:
-	// someone half-way through registration must still be able to open this, and
-	// doing so must not eat the step they were on.
-	if cmd == "/mailing" {
-		s.showMailing(ctx, client, chatID, 0)
-		return
-	}
 	pending := s.takePending(chatID)
 	if u, ok := s.findLinkedUser(chatID); ok {
 		if pending == "reg" {
@@ -403,13 +402,6 @@ func (s *UserService) handleCallback(ctx context.Context, client *Client, cb *Ca
 	msgID := cb.Message.MessageID
 	set, err := s.store.GetSettings()
 	if err != nil {
-		return
-	}
-	// Before the linked-user split and before pending is cleared: the mailing toggle
-	// belongs to everyone in the audience, registered or not, and tapping it must not
-	// drop a registration step in progress.
-	if on, ok := strings.CutPrefix(cb.Data, "vu:mail:"); ok {
-		s.setMailing(ctx, client, chatID, msgID, on == "on")
 		return
 	}
 	s.clearPending(chatID)
@@ -570,6 +562,24 @@ func (s *UserService) linkUserFromCode(ctx context.Context, client *Client, set 
 // @username the audit row records as the account that was bound.
 func actorFromCtxName(ctx context.Context) string { return actor.From(ctx).Name }
 
+// appChannel is the channel whose pinned message is the Android build, and iosAppURL
+// the App Store page for the same client. Both are constants rather than settings:
+// they name the panel's own releases, which don't change between installations, and
+// the Android one is delivered by forwarding the channel's pinned message, so
+// re-pinning that message updates what every user gets with no config change.
+//
+// Forwarding a channel post requires the bot to be an administrator of appChannel
+// (a member that cannot post still can't forward it).
+const (
+	appChannel = int64(-1004211681825)
+	iosAppURL  = "https://apps.apple.com/us/app/proofkit-vpn/id6795355210?l=ru"
+)
+
+// appPinnedTTL is how long a resolved pinned-message id is reused. Telegram gives
+// no way to watch a channel for a re-pin, so this trades a getChat call per tap for
+// a short window in which a freshly pinned message is not yet the one forwarded.
+const appPinnedTTL = time.Minute
+
 func userMenuRows(set *model.Settings, u model.User, lang i18n.Lang) [][]InlineButton {
 	var rows [][]InlineButton
 	// A Mini App button opens the subscription page inside Telegram (QR, link,
@@ -590,6 +600,7 @@ func userMenuRows(set *model.Settings, u model.User, lang i18n.Lang) [][]InlineB
 	// account survives, but they land back on the welcome screen and write to
 	// support to get it back — while an operator who genuinely needs to detach a
 	// chat already has the button in the user's card in the panel.
+	rows = append(rows, []InlineButton{{Text: i18n.T(lang, "user.btnApp"), CallbackData: "vu:apps"}})
 	rows = append(rows, []InlineButton{{Text: i18n.T(lang, "user.btnRefresh"), CallbackData: "vu:menu"}})
 	return rows
 }
@@ -768,6 +779,10 @@ func (s *UserService) handleUserCallback(ctx context.Context, client *Client, cb
 		s.editUserMenu(ctx, client, chatID, msgID, set, u)
 	case "vu:plans":
 		s.showPlans(ctx, client, chatID, msgID, set, u)
+	case "vu:apps":
+		s.showApps(ctx, client, chatID, msgID)
+	case "vu:app:android":
+		s.sendAndroidApp(ctx, client, chatID, msgID)
 	// "vu:unlink"/"vu:unlinkyes" are gone. Old menus still carrying those buttons
 	// fall through to the default branch and do nothing, which is the intended
 	// outcome — the alternative is honouring a detach the panel no longer offers.
@@ -788,6 +803,64 @@ func (s *UserService) handleUserCallback(ctx context.Context, client *Client, cb
 			}
 		}
 	}
+}
+
+// showApps replaces the menu with the platform picker. iOS is a plain link out to
+// the App Store, so it needs no handler — Telegram opens it and the user comes back
+// to the same screen on their own.
+func (s *UserService) showApps(ctx context.Context, client *Client, chatID, msgID int64) {
+	lang := s.lang(chatID)
+	s.edit(ctx, client, chatID, msgID, i18n.T(lang, "user.appsTitle"), appRows(lang))
+}
+
+// appRows is the platform picker: Android is a callback because it has to be
+// fetched and forwarded, iOS a link because the App Store page is already the
+// deliverable.
+func appRows(lang i18n.Lang) [][]InlineButton {
+	return [][]InlineButton{
+		{
+			{Text: i18n.T(lang, "user.btnAppAndroid"), CallbackData: "vu:app:android"},
+			{Text: i18n.T(lang, "user.btnAppIOS"), URL: iosAppURL},
+		},
+		{{Text: i18n.T(lang, "user.btnBack"), CallbackData: "vu:menu"}},
+	}
+}
+
+// sendAndroidApp forwards the app channel's pinned message into the user's chat.
+// A failure (nothing pinned, the bot demoted from the channel) is reported on the
+// picker itself rather than swallowed, so a tap never looks like it did nothing.
+func (s *UserService) sendAndroidApp(ctx context.Context, client *Client, chatID, msgID int64) {
+	lang := s.lang(chatID)
+	pinID, err := s.appMessageID(ctx, client)
+	if err == nil {
+		err = client.ForwardMessage(ctx, chatID, 0, appChannel, pinID)
+	}
+	if err != nil {
+		log.Printf("telegram user: send android app to %d: %v", chatID, err)
+		s.edit(ctx, client, chatID, msgID, i18n.T(lang, "user.appFailed", esc(err.Error())),
+			[][]InlineButton{{{Text: i18n.T(lang, "user.btnBack"), CallbackData: "vu:menu"}}})
+	}
+}
+
+// appMessageID is the app channel's pinned message id, cached briefly: the id only
+// changes when the operator re-pins, and every tap otherwise costs a getChat.
+func (s *UserService) appMessageID(ctx context.Context, client *Client) (int64, error) {
+	s.pinnedMu.Lock()
+	if s.pinnedID != 0 && time.Since(s.pinnedAt) < appPinnedTTL {
+		id := s.pinnedID
+		s.pinnedMu.Unlock()
+		return id, nil
+	}
+	s.pinnedMu.Unlock()
+
+	id, err := client.PinnedMessageID(ctx, appChannel)
+	if err != nil {
+		return 0, err
+	}
+	s.pinnedMu.Lock()
+	s.pinnedID, s.pinnedAt = id, time.Now()
+	s.pinnedMu.Unlock()
+	return id, nil
 }
 
 // confirmCancelPlan asks the user to confirm cancelling their active paid plan.
@@ -1017,55 +1090,16 @@ func userStartLinkCode(arg string) string {
 	return ""
 }
 
-// Broadcast opt-out. Kept as its own command rather than a button under every
-// broadcast: the alternative to a findable opt-out isn't a captive audience, it's
-// people blocking the bot — and a block is irreversible and silently kills payment
-// confirmations and support replies along with the newsletter.
+// Broadcasts go to every chat the bot has recorded. There is no self-service opt-out
+// in the bot: the /mailing command and its card are gone, so a user cannot silence
+// the newsletter from here. The tg_subscribers.opt_out flag is untouched and still
+// honoured by the broadcast audience query — someone who set it while the command
+// existed stays excluded, which is why the column is left alone instead of reset.
 
-// mailingCard renders the current state and the button that flips it.
-func mailingCard(optOut bool, lang i18n.Lang) (string, [][]InlineButton) {
-	if optOut {
-		return i18n.T(lang, "user.mailingOff"),
-			[][]InlineButton{{{Text: i18n.T(lang, "user.btnSubscribe"), CallbackData: "vu:mail:on"}}}
-	}
-	return i18n.T(lang, "user.mailingOn"),
-		[][]InlineButton{{{Text: i18n.T(lang, "user.btnUnsubscribe"), CallbackData: "vu:mail:off"}}}
-}
-
-// showMailing displays the toggle. msgID 0 sends a new message; otherwise the card
-// is edited in place, like the rest of the bot's screens.
-func (s *UserService) showMailing(ctx context.Context, client *Client, chatID, msgID int64) {
-	lang := s.lang(chatID)
-	optOut := false
-	if sub, err := s.store.SubscriberByChat(chatID); err != nil {
-		log.Printf("telegram user: mailing state for %d: %v", chatID, err)
-	} else if sub != nil {
-		optOut = sub.OptOut
-	}
-	text, rows := mailingCard(optOut, lang)
-	if msgID == 0 {
-		s.sendMenu(ctx, client, chatID, text, rows)
-		return
-	}
-	s.edit(ctx, client, chatID, msgID, text, rows)
-}
-
-func (s *UserService) setMailing(ctx context.Context, client *Client, chatID, msgID int64, on bool) {
-	if err := s.store.SetSubscriberOptOut(chatID, !on, time.Now().Unix()); err != nil {
-		log.Printf("telegram user: set mailing for %d: %v", chatID, err)
-		return
-	}
-	s.showMailing(ctx, client, chatID, msgID)
-}
-
-// userBotCommands is the command menu published to Telegram. One entry, not three:
-// the card it opens shows the current state and the single button that flips it, so
-// naming each direction as its own command only made the menu longer without telling
-// anyone anything the card doesn't.
+// userBotCommands is the command menu published to Telegram.
 func userBotCommands(lang i18n.Lang) []BotCommand {
 	return []BotCommand{
 		{Command: "start", Description: i18n.T(lang, "user.cmdStart")},
-		{Command: "mailing", Description: i18n.T(lang, "user.cmdMailing")},
 	}
 }
 

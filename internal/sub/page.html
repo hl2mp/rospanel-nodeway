@@ -644,22 +644,6 @@
         <button class="btn" onclick="copy('{{.SubURL}}', this)">
           {{.L.CopyLink}}
         </button>
-        <button
-          id="openapps-btn"
-          class="btn alt"
-          onclick="openApps()"
-        >
-          {{.L.OpenInApp}}
-        </button>
-        {{if .ShowDownload}}
-        <a
-          class="btn alt"
-          href="{{.SubURL}}?format=clash&amp;dl=1"
-          download="clash.yaml"
-        >
-          {{.L.DownloadClash}}
-        </a>
-        {{end}}
       </div>
 
       {{if .Devices.Show}}
@@ -773,21 +757,14 @@
       </div>
       {{end}}
 
-    <div
-      id="apps"
-      class="modal"
-      onclick="if (event.target === this) this.classList.remove('show');"
-    >
-      <div class="modal-card">
+    <div id="apps" >
+      <div class="card">
         <div class="modal-head">
-          <b>{{.L.PickApp}}</b>
-          <button
-            class="x"
-            onclick="document.getElementById('apps').classList.remove('show')"
-          >
-            ✕
-          </button>
+          <b>{{.L.OpenInApp}}</b>
         </div>
+        <p class="muted" style="text-align: center; margin: 8px">
+              Метка «Обход БС» — поддержка работы в белых списках
+        </p>
         <div class="apps">
           {{range $i, $d := .DeepLinks}}<a class="app" href="{{$d.Href}}" data-i="{{$i}}" onclick="return appClick(event)"
             ><span>{{$d.Label}}</span

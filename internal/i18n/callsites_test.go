@@ -32,7 +32,10 @@ func TestEveryCallSiteKeyExists(t *testing.T) {
 		}
 		if info.IsDir() {
 			switch info.Name() {
-			case ".git", "node_modules", "web", "dist":
+			// .kilo holds agent-manager worktrees: full copies of the tree at
+			// whatever revision they were cut from, and git-excluded, so their
+			// call sites belong to that copy's catalog and not this one.
+			case ".git", ".kilo", "node_modules", "web", "dist":
 				return filepath.SkipDir
 			}
 			return nil
