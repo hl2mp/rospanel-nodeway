@@ -18,7 +18,7 @@ import (
 
 // PinnedVersion is the opera-proxy release auto-downloaded when no binary is
 // present. Pinned (not "latest") so a release can't silently change behaviour.
-const PinnedVersion = "v1.25.0"
+const PinnedVersion = "v1.30.0"
 
 // pinnedSHA256 is the SHA-256 of each platform's opera-proxy asset for
 // PinnedVersion. The downloaded binary is rejected if it doesn't match — this
@@ -26,9 +26,9 @@ const PinnedVersion = "v1.25.0"
 // binary before it is made executable and run as root (mirrors xray/install.go).
 // Update these together with PinnedVersion.
 var pinnedSHA256 = map[string]string{
-	"opera-proxy.linux-amd64":   "2655296010c19309dc22ddca12059a507e32099d461df11db5e7e99c1c1f0691",
-	"opera-proxy.linux-386":     "1461a5b8ef980b50641c1e97eb08ccc839cbc527c3188cd57316ef43e572e0de",
-	"opera-proxy.android-arm64": "450ced891e981aa0bfc6debbe1c839a76c59dd589218c65f865a4fbde97c1044",
+	"opera-proxy.linux-amd64":   "04a0412c9e3b55be78c483cfd2aaca415a0b77dca09befd7c990da1a28f431a8",
+	"opera-proxy.linux-386":     "093d5f655229324d81836694270ca34ab7dd7c733628d156bdfd120487a132bf",
+	"opera-proxy.android-arm64": "e2c7eff21a6f4fa9bd40295f985d3dd02af86e693d32f7653b4afe9ea49dde82",
 }
 
 // releaseAsset returns the opera-proxy release asset name for the current
