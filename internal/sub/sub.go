@@ -87,7 +87,7 @@ func ShareLinksAll(u model.User, servers []Server) []string {
 	links = append(links, "olcrtc://telemost?vp8channel@07339722921845#"+result+"$RU Обход списков (YA)")
 	//links = append(links, "olcrtc://telemost?vp8channel@25012798234647#"+result+"$UK Обход списков (YA)")
 
-	links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$RU Обход списков (RT)")
+	links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$UK Обход списков (RT)")
 	//links = append(links, "olcrtc://jitsi?datachannel@https://meet.mamba.group/nodeway#"+result+"$UK Обход списков (MB)")
 	
 	return links
@@ -153,7 +153,7 @@ func DeepLinks(subURL string, lang i18n.Lang, happCrypt bool) []DeepLink {
 	wireTurnURL := encodeWireTurn(subURL)
 	return []DeepLink{
 		{"Olcbox", "Обход БС · Android", template.URL("olcbox://add?url=" + enc)},
-		{"ProofKit", "Обход БС · iOS · Android", template.URL("proofkit://add?url=" + subURL)},
+		{"Ghostlane", "Обход БС · iOS · Android", template.URL("proofkit://add?url=" + subURL)},
 		{"Happ", allTV, template.URL("happ://add/" + subURL)},
 		{"INCY", allTV, template.URL("incy://import/" + subURL)},
 		//{"v2RayTun", allTV, template.URL("v2raytun://import/" + subURL)},

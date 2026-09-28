@@ -572,7 +572,7 @@ func actorFromCtxName(ctx context.Context) string { return actor.From(ctx).Name 
 // (a member that cannot post still can't forward it).
 const (
 	appChannel = int64(-1004211681825)
-	iosAppURL  = "https://apps.apple.com/us/app/proofkit-vpn/id6795355210?l=ru"
+	iosAppURL  = "https://apps.apple.com/lb/app/ghostlane/id6795355210"
 )
 
 // appPinnedTTL is how long a resolved pinned-message id is reused. Telegram gives
