@@ -161,6 +161,7 @@ func DeepLinks(subURL string, lang i18n.Lang, happCrypt bool) []DeepLink {
 		{"YPtun", "Обход БС · Android", template.URL("yptun://import/" + subURL)},
 		//{"sing-box", "all", template.URL("sing-box://import-remote-profile?url=" + enc)},
 		{"WireTurn", "Обход БС · Android", template.URL("wireturn://" + wireTurnURL)},
+		{"Nodeway VPN", "Обход БС · Android", template.URL("nodeway://import#" + subURL)},
 		//{"Owenclave", "Обход БС · Android", template.URL("owenclave://add-subscription?url=" + enc + "&hwid=1")},
 	}
 }
