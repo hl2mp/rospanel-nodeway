@@ -408,17 +408,17 @@ func (s *UserService) sendWelcome(ctx context.Context, client *Client, set *mode
 }
 
 // welcomeScreen is the screen of a chat with no account: the welcome and its
-// keyboard, the mailing switch included — broadcasts reach this audience too.
+// keyboard.
 func (s *UserService) welcomeScreen(set *model.Settings, chatID int64) (string, [][]InlineButton) {
 	lang := s.lang(chatID)
 	if !set.RegistrationOpen() {
 		return i18n.T(lang, "user.regClosedWelcome"),
-			append(supportOnlyRows(set, lang), s.mailingRows(set, chatID, lang)...)
+			supportOnlyRows(set, lang)
 	}
 	// A request already waiting: say so, and no "sign up" to press again.
 	if set.RegMode() == model.RegModeration && s.panel.RegistrationPending(chatID) {
 		return i18n.T(lang, "user.requestPending"),
-			append(supportOnlyRows(set, lang), s.mailingRows(set, chatID, lang)...)
+			supportOnlyRows(set, lang)
 	}
 	hint := i18n.T(lang, "user.hintOpen")
 	switch set.RegMode() {
@@ -431,7 +431,7 @@ func (s *UserService) welcomeScreen(set *model.Settings, chatID int64) (string, 
 	if line := s.legalAcceptLine(set, lang); line != "" {
 		text += "\n\n" + line
 	}
-	return text, append(welcomeRows(set, lang), s.mailingRows(set, chatID, lang)...)
+	return text, append(welcomeRows(set, lang), supportOnlyRows(set, lang)...)
 }
 
 // welcomeRows is the pre-registration keyboard. Support is offered here too: someone
@@ -480,25 +480,6 @@ func (s *UserService) handleCallback(ctx context.Context, client *Client, cb *Ca
 	msgID := cb.Message.MessageID
 	set, err := s.store.GetSettings()
 	if err != nil {
-		return
-	}
-	// Before the linked-user split and before pending is cleared: the mailing toggle
-	// belongs to everyone in the audience, registered or not, and tapping it must not
-	// drop a registration step in progress.
-	if on, ok := strings.CutPrefix(cb.Data, "vu:mail:"); ok {
-		// An old message's button still works while the switch is shown; hidden, a
-		// press only redraws the screen without it.
-		switch {
-		case set.TGMailingSwitch:
-			s.setMailing(selfActorCtx(ctx, cb.From), client, chatID, msgID, set, on == "on")
-		default:
-			if u, ok := s.findLinkedUser(chatID); ok {
-				s.editUserMenu(ctx, client, chatID, msgID, set, u)
-				return
-			}
-			text, rows := s.welcomeScreen(set, chatID)
-			s.edit(ctx, client, chatID, msgID, text, rows)
-		}
 		return
 	}
 	s.clearPending(chatID)
@@ -793,6 +774,8 @@ func userMenuRows(set *model.Settings, u model.User, lang i18n.Lang) [][]InlineB
 	if link := set.SupportLink(); link != "" {
 		rows = append(rows, []InlineButton{{Text: i18n.T(lang, "user.btnSupport"), URL: link}})
 	}
+	// Download app button with submenu (Android/iOS).
+	rows = append(rows, []InlineButton{{Text: i18n.T(lang, "user.btnDownloadApp"), CallbackData: "vu:app"}})
 	// No self-service unlink. It only ever cost the person their access — the
 	// account survives, but they land back on the welcome screen and write to
 	// support to get it back — while an operator who genuinely needs to detach a
@@ -970,12 +953,17 @@ func (s *UserService) handleUserCallback(ctx context.Context, client *Client, cb
 	}
 	chatID := cb.Message.Chat.ID
 	msgID := cb.Message.MessageID
+	lang := s.lang(chatID)
 	// A button pressed leaves whatever prompt was open (a promo code, an amount);
 	// the buttons that open one set it again below.
 	s.clearPending(chatID)
 	switch cb.Data {
 	case "vu:menu":
 		s.editUserMenu(ctx, client, chatID, msgID, set, u)
+	case "vu:app":
+		s.showAppDownload(ctx, client, chatID, msgID, lang)
+	case "vu:app:android":
+		s.forwardAndroidAPK(ctx, client, chatID)
 	case "vu:legal":
 		s.showLegal(ctx, client, chatID, msgID, set)
 	case "vu:plans":
@@ -1032,6 +1020,42 @@ func (s *UserService) handleUserCallback(ctx context.Context, client *Client, cb
 				}
 			}
 		}
+	}
+}
+
+// showAppDownload shows the app download submenu with Android and iOS buttons.
+func (s *UserService) showAppDownload(ctx context.Context, client *Client, chatID, msgID int64, lang i18n.Lang) {
+	iosURL := "https://apps.apple.com/lb/app/ghostlane/id6795355210"
+	rows := [][]InlineButton{
+		{
+			{Text: i18n.T(lang, "user.btnAppAndroid"), CallbackData: "vu:app:android"},
+			{Text: i18n.T(lang, "user.btnAppIOS"), URL: iosURL},
+		},
+		{{Text: i18n.T(lang, "user.btnBackToMenu"), CallbackData: "vu:menu"}},
+	}
+	s.edit(ctx, client, chatID, msgID, i18n.T(lang, "user.appDownloadTitle"), rows)
+}
+
+// forwardAndroidAPK forwards the pinned message with APK from the channel.
+func (s *UserService) forwardAndroidAPK(ctx context.Context, client *Client, chatID int64) {
+	const channelID int64 = -1004211681825
+	// Get the channel info to find the pinned message
+	chat, err := client.GetChat(ctx, channelID)
+	if err != nil {
+		log.Printf("telegram user: get channel %d for APK: %v", channelID, err)
+		s.send(ctx, client, chatID, i18n.T(s.lang(chatID), "user.appAndroidError"))
+		return
+	}
+	if chat.PinnedMessage == nil {
+		log.Printf("telegram user: channel %d has no pinned message", channelID)
+		s.send(ctx, client, chatID, i18n.T(s.lang(chatID), "user.appAndroidError"))
+		return
+	}
+	// Forward the pinned message to the user
+	if err := client.ForwardMessage(ctx, chatID, 0, channelID, chat.PinnedMessage.MessageID); err != nil {
+		log.Printf("telegram user: forward APK from %d to %d: %v", channelID, chatID, err)
+		s.send(ctx, client, chatID, i18n.T(s.lang(chatID), "user.appAndroidError"))
+		return
 	}
 }
 

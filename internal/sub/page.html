@@ -1014,9 +1014,7 @@
         {{if eq .Type "button"}}<a class="btn alt" style="margin: 0 0 12px" href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.Label}}</a>
         {{else}}<div class="card plugin-block{{if eq .Type "notice"}} notice{{end}}" style="margin-bottom: 12px">{{.HTML}}</div>{{end}}
         {{end}}
-        {{if .DeepLinks}}
-        <button class="btn" style="margin: 0 0 12px" onclick="openWizard()">{{.L.WzOpen}}</button>
-        {{end}}
+
         <div class="card">
           <div class="qr"><img src="{{.SubURL}}/qr.png" alt="QR" /></div>
           <p class="muted" style="text-align: center; margin: 0.8rem 0 0">
@@ -1162,15 +1160,6 @@
 
         <!-- The page's own address is the key to it: say so, and offer the bot to whoever
              has not linked it. -->
-        <div class="card" id="access-card">
-          <div class="lbl" style="margin-bottom: 6px">{{.L.AccessTitle}}</div>
-          <p class="muted" style="margin: 0 0 10px">{{.L.AccessHint}}</p>
-          <button class="btn alt" onclick="copy('{{.SubURL}}', this)">{{.L.AccessCopy}}</button>
-          {{if .Access.TGLink}}
-          <a class="btn alt" style="margin-top: 14px" href="{{.Access.TGLink}}" target="_blank" rel="noopener noreferrer" onclick="return tgAccess(this, {{.Access.TGLinked}})">{{if .Access.TGLinked}}{{.L.TGChange}}{{else}}{{.L.TGBind}}{{end}}</a>
-          {{if not .Access.TGLinked}}<p class="muted" style="margin: 6px 0 0">{{.L.TGBindHint}}</p>{{end}}
-          {{end}}
-        </div>
       </section>
 
       {{if .Billing.Show}}
@@ -1383,21 +1372,14 @@
       </p>
       {{end}}
 
-    <div
-      id="apps"
-      class="modal"
-      onclick="if (event.target === this) this.classList.remove('show');"
-    >
-      <div class="modal-card">
+    <div id="apps">
+      <div class="card">
         <div class="modal-head">
-          <b>{{.L.PickApp}}</b>
-          <button
-            class="x"
-            onclick="document.getElementById('apps').classList.remove('show')"
-          >
-            ✕
-          </button>
+          <b>{{.L.OpenInApp}}</b>
         </div>
+        <p class="muted" style="text-align: center; margin: 8px">
+              Метка «Обход БС» — поддержка работы в белых списках
+        </p>
         <div class="apps">
           {{range $i, $d := .DeepLinks}}<a class="app" href="{{$d.Href}}" data-i="{{$i}}" onclick="return appClick(event)"
             ><span>{{$d.Label}}</span

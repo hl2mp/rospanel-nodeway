@@ -206,10 +206,11 @@ type User struct {
 	LangCode string `json:"language_code"`
 }
 type Chat struct {
-	ID      int64  `json:"id"`
-	Type    string `json:"type"`     // "private" | "group" | "supergroup" | "channel"
-	Title   string `json:"title"`    // group name (empty for private chats)
-	IsForum bool   `json:"is_forum"` // supergroup with Topics enabled
+	ID            int64    `json:"id"`
+	Type          string   `json:"type"`     // "private" | "group" | "supergroup" | "channel"
+	Title         string   `json:"title"`    // group name (empty for private chats)
+	IsForum       bool     `json:"is_forum"` // supergroup with Topics enabled
+	PinnedMessage *Message `json:"pinned_message"`
 }
 
 // ChatMember is the subset of a member record the support-group check reads: the

@@ -242,6 +242,12 @@ var ru = map[string]string{
 	"user.btnPay":            "💳 Оплатить",
 	"user.btnMailingOn":      "🔔 Рассылка: вкл",
 	"user.btnMailingOff":     "🔕 Рассылка: выкл",
+	"user.btnDownloadApp":    "📱 Скачать приложение",
+	"user.btnAppAndroid":     "Android",
+	"user.btnAppIOS":         "iOS",
+	"user.btnBackToMenu":     "⬅️ В меню",
+	"user.appDownloadTitle":  "📱 <b>Скачать приложение</b>\n\nВыберите платформу:",
+	"user.appAndroidError":   "⚠️ Не удалось получить APK-файл. Попробуйте позже или обратитесь в поддержку.",
 
 	"user.cardPlan":               "💳 Тариф: <b>%s</b>",
 	"user.cardPlanManual":         "💳 Тариф: вручную",

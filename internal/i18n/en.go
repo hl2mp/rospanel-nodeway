@@ -227,6 +227,12 @@ var en = map[string]string{
 	"user.btnPay":            "💳 Pay",
 	"user.btnMailingOn":      "🔔 Broadcasts: on",
 	"user.btnMailingOff":     "🔕 Broadcasts: off",
+	"user.btnDownloadApp":    "📱 Download app",
+	"user.btnAppAndroid":     "Android",
+	"user.btnAppIOS":         "iOS",
+	"user.btnBackToMenu":     "⬅️ Back to menu",
+	"user.appDownloadTitle":  "📱 <b>Download app</b>\n\nChoose platform:",
+	"user.appAndroidError":   "⚠️ Failed to get APK file. Try again later or contact support.",
 
 	"user.cardPlan":               "💳 Plan: <b>%s</b>",
 	"user.cardPlanManual":         "💳 Plan: manual",
