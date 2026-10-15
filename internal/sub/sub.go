@@ -158,7 +158,7 @@ func DeepLinks(subURL string, lang i18n.Lang, happCrypt bool) []DeepLink {
 		{"INCY", allTV, template.URL("incy://import/" + subURL)},
 		//{"v2RayTun", allTV, template.URL("v2raytun://import/" + subURL)},
 		{"Streisand", "iOS · macOS · tvOS", template.URL("streisand://import/" + subURL)},
-		{"YPtun", "Обход БС · Android", template.URL("yptun://import/" + subURL)},
+		//{"YPtun", "Обход БС · Android", template.URL("yptun://import/" + subURL)},
 		//{"sing-box", "all", template.URL("sing-box://import-remote-profile?url=" + enc)},
 		{"WireTurn", "Обход БС · Android", template.URL("wireturn://" + wireTurnURL)},
 		{"Nodeway VPN", "Обход БС · Android", template.URL("nodeway://import#" + subURL)},
