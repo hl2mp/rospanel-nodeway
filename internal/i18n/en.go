@@ -173,7 +173,6 @@ var en = map[string]string{
 	"user.withDevices_other":    " + %d devices",
 	"user.purchaseDone":         "✅ Done: %s.",
 	"user.termGone":             "That term is no longer sold — pick again.",
-	"user.menuApp":              "Account",
 	"user.regClosed":            "Sign-up is closed. Contact the administrator.",
 	"user.regRefused":           "Sign-up is not available for this account.",
 	"user.welcome":              "👋 <b>Welcome!</b>",

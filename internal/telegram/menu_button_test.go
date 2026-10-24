@@ -11,13 +11,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/AppsGanin/rospanel/internal/i18n"
 	"github.com/AppsGanin/rospanel/internal/store"
 )
 
-// A renamed menu button reaches a bot already running: the button at our address
-// with last release's label is set again, one with today's label is left alone.
-func TestMenuButtonFollowsItsLabel(t *testing.T) {
+func TestMenuButtonRestoresCommandMenu(t *testing.T) {
 	t.Parallel()
 	st, err := store.Open(filepath.Join(t.TempDir(), "menu.db"))
 	if err != nil {
@@ -27,9 +24,9 @@ func TestMenuButtonFollowsItsLabel(t *testing.T) {
 	if err := st.ExecForTest(`UPDATE settings SET host = 'vpn.example.com', miniapp_path = 'mini', tg_lang = 'ru' WHERE id = 1`); err != nil {
 		t.Fatal(err)
 	}
-	url := "https://vpn.example.com/sub/mini"
+	url := "https://vpn.example.com/sub/old-mini"
 	var mu sync.Mutex
-	label := "Мой VPN"
+	menuType := "web_app"
 	sets := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
@@ -38,15 +35,15 @@ func TestMenuButtonFollowsItsLabel(t *testing.T) {
 		defer mu.Unlock()
 		switch {
 		case strings.HasSuffix(r.URL.Path, "/getChatMenuButton"):
-			_, _ = w.Write([]byte(`{"ok":true,"result":{"type":"web_app","text":"` + label + `","web_app":{"url":"` + url + `"}}}`))
+			_, _ = w.Write([]byte(`{"ok":true,"result":{"type":"` + menuType + `","web_app":{"url":"` + url + `"}}}`))
 		case strings.HasSuffix(r.URL.Path, "/setChatMenuButton"):
 			var p struct {
 				MenuButton struct {
-					Text string `json:"text"`
+					Type string `json:"type"`
 				} `json:"menu_button"`
 			}
 			_ = json.Unmarshal(body, &p)
-			label = p.MenuButton.Text
+			menuType = p.MenuButton.Type
 			sets++
 			_, _ = w.Write([]byte(`{"ok":true,"result":true}`))
 		default:
@@ -59,10 +56,10 @@ func TestMenuButtonFollowsItsLabel(t *testing.T) {
 	if !s.publishMenuButton(context.Background(), c) {
 		t.Fatal("publish failed")
 	}
-	if want := i18n.T(i18n.RU, "user.menuApp"); sets != 1 || label != want {
-		t.Fatalf("after the rename: %d sets, label %q (want %q)", sets, label, want)
+	if sets != 1 || menuType != "commands" {
+		t.Fatalf("command menu not restored: %d sets, type %q", sets, menuType)
 	}
 	if !s.publishMenuButton(context.Background(), c) || sets != 1 {
-		t.Errorf("an up-to-date button was set again (%d sets)", sets)
+		t.Errorf("command menu was set again (%d sets)", sets)
 	}
 }

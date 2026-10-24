@@ -11,7 +11,7 @@ import (
 
 // The mailing switch sits on the first screen and says what is in force: on by
 // default, off once the chat opted out, and its button flips to the other. The bot
-// publishes /start alone.
+// publishes its built-in commands.
 func TestMailingSwitch(t *testing.T) {
 	t.Parallel()
 	st, err := store.Open(filepath.Join(t.TempDir(), "mail.db"))
@@ -40,7 +40,8 @@ func TestMailingSwitch(t *testing.T) {
 	if set, _ := st.GetSettings(); !set.TGMailingSwitch {
 		t.Error("the switch is hidden by default")
 	}
-	if cmds := userBotCommands(i18n.RU); len(cmds) != 1 || cmds[0].Command != "start" {
-		t.Errorf("commands = %+v, want /start alone", cmds)
+	cmds := userBotCommands(i18n.RU)
+	if len(cmds) != 1 || cmds[0] != (BotCommand{Command: "start", Description: "Главное меню"}) {
+		t.Errorf("commands = %+v, want /start only", cmds)
 	}
 }

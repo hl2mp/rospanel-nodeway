@@ -188,7 +188,6 @@ var ru = map[string]string{
 	"user.withDevices_other":    " + %d устройства",
 	"user.purchaseDone":         "✅ Готово: %s.",
 	"user.termGone":             "Такого срока больше нет — выберите заново.",
-	"user.menuApp":              "Кабинет",
 	"user.regClosed":            "Регистрация закрыта. Обратитесь к администратору.",
 	"user.regRefused":           "Регистрация для этого аккаунта недоступна.",
 	"user.welcome":              "👋 <b>Добро пожаловать!</b>",

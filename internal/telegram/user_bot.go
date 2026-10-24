@@ -1415,8 +1415,7 @@ func (s *UserService) setMailing(ctx context.Context, client *Client, chatID, ms
 	s.edit(ctx, client, chatID, msgID, text, rows)
 }
 
-// userBotCommands is the command menu published to Telegram: /start alone — the
-// mailing switch lives on the screen it opens.
+// userBotCommands is the command menu published to Telegram.
 func userBotCommands(lang i18n.Lang) []BotCommand {
 	return []BotCommand{
 		{Command: "start", Description: i18n.T(lang, "user.cmdStart")},
@@ -1472,46 +1471,38 @@ func (s *UserService) publishCommands(ctx context.Context, client *Client, token
 	s.mu.Unlock()
 }
 
-// publishMenuButton points the bot's menu button at the Mini App, so a user opens
-// their subscription from any chat screen without a link carrying their token. A
-// web_app button the operator set to somewhere else is left alone.
-//
-// Ours is the address this panel last set (settings.TGMenuURL), so a move to another
-// host or path updates it; any other web_app address is the operator's own.
+// publishMenuButton restores Telegram's command menu when the button still points
+// at a Mini App URL this panel set. A web_app button the operator set elsewhere is
+// left alone.
 func (s *UserService) publishMenuButton(ctx context.Context, client *Client) bool {
 	set, err := s.store.GetSettings()
 	if err != nil {
 		return false
-	}
-	url := sub.MiniAppURL(set)
-	if url == "" {
-		return true
 	}
 	cur, err := client.GetChatMenuButton(ctx)
 	if err != nil {
 		log.Printf("telegram user: read the menu button: %v", err)
 		return false
 	}
-	label := i18n.T(i18n.Normalize(set.BotLang()), "user.menuApp")
-	if cur.Type == "web_app" && cur.WebApp != nil {
-		// Ours as it stands — the address and the label (a release renaming it must
-		// reach the bots already running).
-		if cur.WebApp.URL == url && cur.Text == label {
-			return true
-		}
-		// Ours is the address last set, or anything under this panel's subscription
-		// path (an older build set a fixed one there); anything else is the operator's.
-		ours := cur.WebApp.URL == set.TGMenuURL ||
-			strings.HasPrefix(cur.WebApp.URL, "https://"+set.Host+"/"+set.SubPathOr()+"/")
-		if !ours {
-			return true
-		}
+	if cur.Type == "commands" || cur.Type == "default" {
+		return true
 	}
-	if err := client.SetChatMenuButton(ctx, label, url); err != nil {
+	if cur.Type != "web_app" || cur.WebApp == nil {
+		return true
+	}
+	ours := cur.WebApp.URL == set.TGMenuURL ||
+		strings.HasPrefix(cur.WebApp.URL, "https://"+set.Host+"/"+set.SubPathOr()+"/")
+	if !ours {
+		return true
+	}
+	if err := client.SetChatMenuButtonCommands(ctx); err != nil {
 		log.Printf("telegram user: set the menu button: %v", err)
 		return false
 	}
-	_ = s.store.SetTelegramMenuURL(url)
+	if err := s.store.SetTelegramMenuURL(""); err != nil {
+		log.Printf("telegram user: clear the menu button URL: %v", err)
+		return false
+	}
 	return true
 }
 

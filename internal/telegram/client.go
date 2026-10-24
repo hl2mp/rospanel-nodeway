@@ -715,9 +715,9 @@ func (c *Client) GetChatMenuButton(ctx context.Context) (*MenuButton, error) {
 	return &b, nil
 }
 
-// SetChatMenuButton makes the bot's default menu button open a Mini App.
-func (c *Client) SetChatMenuButton(ctx context.Context, text, url string) error {
+// SetChatMenuButtonCommands makes the bot's menu button open its command list.
+func (c *Client) SetChatMenuButtonCommands(ctx context.Context) error {
 	return c.call(ctx, "setChatMenuButton", map[string]any{
-		"menu_button": MenuButton{Type: "web_app", Text: text, WebApp: &WebAppInfo{URL: url}},
+		"menu_button": MenuButton{Type: "commands"},
 	}, nil)
 }

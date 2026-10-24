@@ -81,7 +81,7 @@ func ShareLinksAll(u model.User, servers []Server) []string {
 	// 2. Кодируем полученные байты в hex-строку
 	result := hex.EncodeToString(hash[:])
 
-	links = append(links, "olcrtc://vkcalls?vp8channel@https://vk.com/call/join/xXFtdLLINMQOxRKBRbls9lyeUuV7Vu2Ya8LfGxc7xO4#"+result+"$UK Обход списков (VK)")
+	//links = append(links, "olcrtc://vkcalls?vp8channel@https://vk.com/call/join/xXFtdLLINMQOxRKBRbls9lyeUuV7Vu2Ya8LfGxc7xO4#"+result+"$UK Обход списков (VK)")
 	//links = append(links, "olcrtc://wbstream?vp8channel@nodeway#"+result+"$UK Обход списков (WB)")
 
 	//links = append(links, "olcrtc://telemost?vp8channel@07339722921845#"+result+"$RU Обход списков (YA)")
