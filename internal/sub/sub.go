@@ -88,6 +88,7 @@ func ShareLinksAll(u model.User, servers []Server) []string {
 	//links = append(links, "olcrtc://telemost?vp8channel@25012798234647#"+result+"$UK Обход списков (YA)")
 
 	links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$UK Обход списков (RT)")
+	links = append(links, "olcrtc://salutejazz?datachannel@lagtgs:bcvlcgdm#"+result+"$RU Обход списков (Sber)")
 	//links = append(links, "olcrtc://jitsi?datachannel@https://meet.mamba.group/nodeway#"+result+"$UK Обход списков (MB)")
 	
 	return links
@@ -152,7 +153,7 @@ func DeepLinks(subURL string, lang i18n.Lang, happCrypt bool) []DeepLink {
 	allTV := i18n.T(lang, "sub.allPlusTV")
 	wireTurnURL := encodeWireTurn(subURL)
 	return []DeepLink{
-		{"Olcbox", "Обход БС · Android", template.URL("olcbox://add?url=" + enc)},
+		{"NodeTun", "Обход БС · Android", template.URL("nodeway://import#" + subURL)},
 		{"Ghostlane", "Обход БС · iOS · Android", template.URL("proofkit://add?url=" + subURL)},
 		{"Happ", allTV, template.URL("happ://add/" + subURL)},
 		{"INCY", allTV, template.URL("incy://import/" + subURL)},
@@ -161,7 +162,7 @@ func DeepLinks(subURL string, lang i18n.Lang, happCrypt bool) []DeepLink {
 		//{"YPtun", "Обход БС · Android", template.URL("yptun://import/" + subURL)},
 		//{"sing-box", "all", template.URL("sing-box://import-remote-profile?url=" + enc)},
 		{"WireTurn", "Обход БС · Android", template.URL("wireturn://" + wireTurnURL)},
-		{"Nodeway VPN", "Обход БС · Android", template.URL("nodeway://import#" + subURL)},
+		{"Olcbox", "Обход БС · Android", template.URL("olcbox://add?url=" + enc)},
 		//{"Owenclave", "Обход БС · Android", template.URL("owenclave://add-subscription?url=" + enc + "&hwid=1")},
 	}
 }
