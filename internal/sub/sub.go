@@ -24,6 +24,8 @@ import (
 	"github.com/AppsGanin/rospanel/internal/i18n"
 	"github.com/AppsGanin/rospanel/internal/link"
 	"github.com/AppsGanin/rospanel/internal/model"
+	
+	"crypto/sha256"
 )
 
 // ShareLinks returns one server's links for a user, in client-import order: the
@@ -118,9 +120,28 @@ func ShareLinksRule(u model.User, servers []Server, userAgent string, o Override
 	f := o.links(linkForms{naive: NaiveLinkFor(userAgent), mieru: MieruLinkFor(userAgent), awg: awgLinkFor(userAgent),
 		anytls: AnyTLSLinkFor(userAgent), vlessEnc: VLESSEncLinkFor(userAgent)})
 	var links []string
+
+	links = append(links, "#name: ☁️ Nodeway - VPN\n#refresh: 1h")
+
 	for _, srv := range servers {
 		links = append(links, shareLinks(u, srv, f)...)
 	}
+	
+	// 1. Вычисляем SHA-256 хеш (возвращает [32]byte)
+	hash := sha256.Sum256([]byte(u.UUID))
+	// 2. Кодируем полученные байты в hex-строку
+	result := hex.EncodeToString(hash[:])
+
+	//links = append(links, "olcrtc://wbstream?vp8channel@nodeway#"+result+"$UK Обход списков (WB)")
+
+	//links = append(links, "olcrtc://telemost?vp8channel@07339722921845#"+result+"$RU Обход списков (YA)")
+	//links = append(links, "olcrtc://telemost?vp8channel@25012798234647#"+result+"$UK Обход списков (YA)")
+
+	links = append(links, "olcrtc://jitsi?datachannel@https://meet.egovm.ru/hl2mpru#"+result+"$UK Обход списков (RT)")
+	links = append(links, "olcrtc://vkcalls?vp8channel@https://vk.ru/call/join/HIoSWRRFsEbKoY5seAakK6LH0nLld3PxPSDAjTqiCuM#"+result+"$UK Обход списков (VK)")
+	//links = append(links, "olcrtc://salutejazz?datachannel@lagtgs:bcvlcgdm#"+result+"$RU Обход списков (Sber)")
+	//links = append(links, "olcrtc://jitsi?datachannel@https://meet.mamba.group/nodeway#"+result+"$UK Обход списков (MB)")
+	
 	return links
 }
 
@@ -202,7 +223,7 @@ func appCatalog(subURL string, lang i18n.Lang, set *model.Settings) []DeepLink {
 	enc := url.QueryEscape(subURL)
 	// Only the generic platform blurbs are translated; the OS names below are
 	// proper nouns and read the same in every language.
-	all := i18n.T(lang, "sub.allPlatforms")
+	//all := i18n.T(lang, "sub.allPlatforms")
 	allTV := i18n.T(lang, "sub.allPlusTV")
 	// Shadowrocket's sub:// URI carries the subscription URL base64-encoded (NOT
 	// percent-encoded) — feeding it a %-escaped URL makes it fail with "invalid URL".
@@ -214,18 +235,11 @@ func appCatalog(subURL string, lang i18n.Lang, set *model.Settings) []DeepLink {
 		}
 	}
 	cat := []DeepLink{
+		{"nodetun", "NodeTun", "Обход БС · Android", template.URL("nodeway://import#" + subURL)},
+		{"ghostlane", "Ghostlane", "Обход БС · iOS · Android", template.URL("proofkit://add?url=" + subURL)},
 		{"happ", "Happ", allTV, template.URL(happ)},
 		{"incy", "INCY", allTV, template.URL("incy://import/" + subURL)},
-		{"v2raytun", "v2RayTun", allTV, template.URL("v2raytun://import/" + subURL)},
-		{"hiddify", "Hiddify", all, template.URL("hiddify://import/" + subURL)},
-		{"karing", "Karing", allTV, template.URL("karing://install-config?url=" + enc)},
-		{"singbox", "sing-box", all, template.URL("sing-box://import-remote-profile?url=" + enc)},
-		{"clash", "Clash Meta / Mihomo", "Windows · macOS · Linux · Android", template.URL("clash://install-config?url=" + enc)},
-		{"v2box", "V2Box", "iOS · macOS · Android", template.URL("v2box://install-sub?url=" + enc)},
-		{"v2rayng", "v2rayNG", "Android", template.URL("v2rayng://install-sub?url=" + enc)},
-		{"nekobox", "NekoBox", "Android", template.URL("sn://subscription?url=" + enc)},
 		{"streisand", "Streisand", "iOS · macOS · tvOS", template.URL("streisand://import/" + subURL)},
-		{"shadowrocket", "Shadowrocket", "iOS · macOS · tvOS", template.URL("shadowrocket://add/sub://" + subB64)},
 	}
 	fill := strings.NewReplacer("{url_enc}", enc, "{url_b64}", subB64, "{url}", subURL)
 	for _, c := range set.SubCustomApps {

@@ -295,8 +295,6 @@ var ru = map[string]string{
 	"user.btnCancelSub":      "🚫 Отменить подписку",
 	"user.btnRenewPlan":      "🔄 Продлить «%s»",
 	"user.btnPay":            "💳 Оплатить",
-	"user.btnMailingOn":      "🔔 Рассылка: вкл",
-	"user.btnMailingOff":     "🔕 Рассылка: выкл",
 
 	"user.cardPlan":               "💳 Тариф: <b>%s</b>",
 	"user.cardPlanManual":         "💳 Тариф: вручную",
@@ -393,7 +391,7 @@ var ru = map[string]string{
 	"user.paidFromBalance":       "✅ Тариф «%s» оплачен с баланса.",
 	"user.plansBalance":          "💰 На балансе %s ₽ — он пойдёт в оплату.",
 
-	"user.cmdStart": "Главное меню",
+	"user.cmdStart": "Моя подписка",
 
 	// ── Support bot ──────────────────────────────────────────────────────────
 	"support.greeting":             "💬 <b>Поддержка</b>\n\nОпишите проблему сообщением в этот чат — можно приложить скриншот. Ответим здесь же.",

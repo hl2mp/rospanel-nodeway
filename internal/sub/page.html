@@ -1144,7 +1144,7 @@
 {{end}}
 {{define "core:wizard"}}
         {{if .Wizard}}
-        <button class="btn" style="margin: 0 0 12px" onclick="openWizard()">{{.L.WzOpen}}</button>
+        <!-- <button class="btn" style="margin: 0 0 12px" onclick="openWizard()">{{.L.WzOpen}}</button> -->
         {{end}}
 {{end}}
 {{define "core:connect"}}
@@ -2652,6 +2652,9 @@
             ✕
           </button>
         </div>
+		<p class="muted" style="text-align: center; margin: 8px">
+              Метка «Обход БС» — поддержка работы в белых списках
+        </p>
         <div class="apps">
           {{range $i, $d := .DeepLinks}}<a class="app" href="{{$d.Href}}" data-i="{{$i}}" onclick="return appClick(event)"
             ><span>{{$d.Label}}</span

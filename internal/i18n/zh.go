@@ -278,8 +278,6 @@ var zh = map[string]string{
 	"user.btnCancelSub":      "🚫 取消订阅",
 	"user.btnRenewPlan":      "🔄 续订“%s”",
 	"user.btnPay":            "💳 支付",
-	"user.btnMailingOn":      "🔔 群发消息：开",
-	"user.btnMailingOff":     "🔕 群发消息：关",
 
 	"user.cardPlan":               "💳 套餐：<b>%s</b>",
 	"user.cardPlanManual":         "💳 套餐：手动",
@@ -376,7 +374,7 @@ var zh = map[string]string{
 	"user.paidFromBalance":       "✅ “%s”套餐已使用余额支付。",
 	"user.plansBalance":          "💰 您的余额有 %s ₽——将用于抵扣付款。",
 
-	"user.cmdStart": "主菜单",
+	"user.cmdStart": "我的订阅",
 
 	// ── Support bot ──────────────────────────────────────────────────────────
 	"support.greeting":             "💬 <b>客服</b>\n\n请在此聊天中发送消息描述问题——可以附上截图。我们会在这里回复。",

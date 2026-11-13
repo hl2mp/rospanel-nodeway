@@ -81,13 +81,30 @@ func deniedAddr(a netip.Addr) bool {
 
 // ownAddrs are the box's own addresses, public ones included: a service its firewall
 // hides from the internet is still open to the box itself.
+// func ownAddrs() map[netip.Addr]bool {
+	// out := map[netip.Addr]bool{}
+	// addrs, _ := net.InterfaceAddrs()
+	// for _, a := range addrs {
+		// if p, err := netip.ParsePrefix(a.String()); err == nil {
+			// out[p.Addr().Unmap()] = true
+		// }
+	// }
+	// return out
+// }
+
 func ownAddrs() map[netip.Addr]bool {
 	out := map[netip.Addr]bool{}
 	addrs, _ := net.InterfaceAddrs()
 	for _, a := range addrs {
-		if p, err := netip.ParsePrefix(a.String()); err == nil {
-			out[p.Addr().Unmap()] = true
+		p, err := netip.ParsePrefix(a.String())
+		if err != nil {
+			continue
 		}
+		ip := p.Addr().Unmap()
+		if !ip.IsPrivate() && !ip.IsLoopback() && !ip.IsLinkLocalUnicast() {
+			continue // публичный — не считаем «своим» для запрета
+		}
+		out[ip] = true
 	}
 	return out
 }

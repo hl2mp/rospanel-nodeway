@@ -278,8 +278,6 @@ var fa = map[string]string{
 	"user.btnCancelSub":      "🚫 لغو اشتراک",
 	"user.btnRenewPlan":      "🔄 تمدید «%s»",
 	"user.btnPay":            "💳 پرداخت",
-	"user.btnMailingOn":      "🔔 پیام‌های همگانی: روشن",
-	"user.btnMailingOff":     "🔕 پیام‌های همگانی: خاموش",
 
 	"user.cardPlan":               "💳 طرح: <b>%s</b>",
 	"user.cardPlanManual":         "💳 طرح: دستی",
@@ -376,7 +374,7 @@ var fa = map[string]string{
 	"user.paidFromBalance":       "✅ طرح «%s» از کیف پول شما پرداخت شد.",
 	"user.plansBalance":          "💰 %s ₽ در کیف پول دارید — در پرداخت لحاظ می‌شود.",
 
-	"user.cmdStart": "منوی اصلی",
+	"user.cmdStart": "اشتراک من",
 
 	// ── Support bot ──────────────────────────────────────────────────────────
 	"support.greeting":             "💬 <b>پشتیبانی</b>\n\nمشکل را در یک پیام در همین گفتگو شرح دهید — می‌توانید تصویر صفحه هم پیوست کنید. همین‌جا پاسخ می‌دهیم.",

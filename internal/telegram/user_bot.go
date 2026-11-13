@@ -418,17 +418,15 @@ func (s *UserService) sendWelcome(ctx context.Context, client *Client, set *mode
 }
 
 // welcomeScreen is the screen of a chat with no account: the welcome and its
-// keyboard, the mailing switch included — broadcasts reach this audience too.
+// keyboard.
 func (s *UserService) welcomeScreen(set *model.Settings, chatID int64) (string, [][]InlineButton) {
 	lang := s.lang(chatID)
 	if !set.RegistrationOpen() {
-		return i18n.T(lang, "user.regClosedWelcome"),
-			append(supportOnlyRows(set, lang), s.mailingRows(set, chatID, lang)...)
+		return i18n.T(lang, "user.regClosedWelcome"), supportOnlyRows(set, lang)
 	}
 	// A request already waiting: say so, and no "sign up" to press again.
 	if set.RegMode() == model.RegModeration && s.panel.RegistrationPending(chatID) {
-		return i18n.T(lang, "user.requestPending"),
-			append(supportOnlyRows(set, lang), s.mailingRows(set, chatID, lang)...)
+		return i18n.T(lang, "user.requestPending"), supportOnlyRows(set, lang)
 	}
 	hint := i18n.T(lang, "user.hintOpen")
 	switch set.RegMode() {
@@ -441,7 +439,7 @@ func (s *UserService) welcomeScreen(set *model.Settings, chatID int64) (string, 
 	if line := s.legalAcceptLine(set, lang); line != "" {
 		text += "\n\n" + line
 	}
-	return text, append(welcomeRows(set, lang), s.mailingRows(set, chatID, lang)...)
+	return text, welcomeRows(set, lang)
 }
 
 // welcomeRows is the pre-registration keyboard. Support is offered here too: someone
@@ -490,25 +488,6 @@ func (s *UserService) handleCallback(ctx context.Context, client *Client, cb *Ca
 	msgID := cb.Message.MessageID
 	set, err := s.store.GetSettings()
 	if err != nil {
-		return
-	}
-	// Before the linked-user split and before pending is cleared: the mailing toggle
-	// belongs to everyone in the audience, registered or not, and tapping it must not
-	// drop a registration step in progress.
-	if on, ok := strings.CutPrefix(cb.Data, "vu:mail:"); ok {
-		// An old message's button still works while the switch is shown; hidden, a
-		// press only redraws the screen without it.
-		switch {
-		case set.TGMailingSwitch:
-			s.setMailing(selfActorCtx(ctx, cb.From), client, chatID, msgID, set, on == "on")
-		default:
-			if u, ok := s.findLinkedUser(chatID); ok {
-				s.editUserMenu(ctx, client, chatID, msgID, set, u)
-				return
-			}
-			text, rows := s.welcomeScreen(set, chatID)
-			s.edit(ctx, client, chatID, msgID, text, rows)
-		}
 		return
 	}
 	s.clearPending(chatID)
@@ -1399,48 +1378,7 @@ func userStartLinkCode(arg string) string {
 	return ""
 }
 
-// Broadcast opt-out: a switch on the bot's first screen — the welcome, or the
-// account menu — that shows the state and flips it in place. A findable opt-out is
-// what keeps people from blocking the bot instead, and a block silently kills payment
-// confirmations and support replies along with the newsletter.
-
-// mailingRows is the switch as a keyboard row, or none while the operator hides it
-// (Settings → Telegram); an opt-out made before stays in force either way.
-func (s *UserService) mailingRows(set *model.Settings, chatID int64, lang i18n.Lang) [][]InlineButton {
-	if !set.TGMailingSwitch {
-		return nil
-	}
-	return [][]InlineButton{s.mailingRow(chatID, lang)}
-}
-
-// mailingRow is the switch: the current state, and a tap flips it.
-func (s *UserService) mailingRow(chatID int64, lang i18n.Lang) []InlineButton {
-	optOut, err := s.store.ChatMailingOff(chatID)
-	if err != nil {
-		log.Printf("telegram user: mailing state for %d: %v", chatID, err)
-	}
-	if optOut {
-		return []InlineButton{{Text: i18n.T(lang, "user.btnMailingOff"), CallbackData: "vu:mail:on"}}
-	}
-	return []InlineButton{{Text: i18n.T(lang, "user.btnMailingOn"), CallbackData: "vu:mail:off"}}
-}
-
-// setMailing flips the switch and redraws the screen it sits on.
-func (s *UserService) setMailing(ctx context.Context, client *Client, chatID, msgID int64, set *model.Settings, on bool) {
-	if err := s.panel.SetChatMailing(ctx, chatID, on); err != nil {
-		log.Printf("telegram user: set mailing for %d: %v", chatID, err)
-		return
-	}
-	if u, ok := s.findLinkedUser(chatID); ok {
-		s.editUserMenu(ctx, client, chatID, msgID, set, u)
-		return
-	}
-	text, rows := s.welcomeScreen(set, chatID)
-	s.edit(ctx, client, chatID, msgID, text, rows)
-}
-
-// userBotCommands is the command menu published to Telegram: /start alone — the
-// mailing switch lives on the screen it opens.
+// userBotCommands is the command menu published to Telegram.
 func userBotCommands(lang i18n.Lang) []BotCommand {
 	return []BotCommand{
 		{Command: "start", Description: i18n.T(lang, "user.cmdStart")},
@@ -1503,63 +1441,32 @@ func (s *UserService) publishCommands(ctx context.Context, client *Client, token
 	s.mu.Unlock()
 }
 
-// publishMenuButton points the bot's menu button at the Mini App, so a user opens
-// their subscription from any chat screen without a link carrying their token. A
-// web_app button the operator set to somewhere else is left alone.
-//
-// Ours is the address this panel last set (settings.TGMenuURL), so a move to another
-// host or path updates it; any other web_app address is the operator's own.
+// publishMenuButton keeps Telegram's default commands menu button so users can
+// open the bot menu (e.g. "My subscription" -> /start). If this panel previously
+// forced a web_app menu button, reset it back to default.
 func (s *UserService) publishMenuButton(ctx context.Context, client *Client) bool {
 	set, err := s.store.GetSettings()
 	if err != nil {
 		return false
-	}
-	url := sub.MiniAppURL(set)
-	if url == "" {
-		// Nothing to open (the page switched off, no host yet): a button of ours that
-		// is still there would lead to the decoy, so it goes back to the default.
-		if set.TGMenuURL == "" {
-			return true
-		}
-		cur, err := client.GetChatMenuButton(ctx)
-		if err != nil {
-			log.Printf("telegram user: read the menu button: %v", err)
-			return false
-		}
-		if cur.Type == "web_app" && cur.WebApp != nil && cur.WebApp.URL == set.TGMenuURL {
-			if err := client.ResetChatMenuButton(ctx); err != nil {
-				log.Printf("telegram user: reset the menu button: %v", err)
-				return false
-			}
-		}
-		_ = s.store.SetTelegramMenuURL("")
-		return true
 	}
 	cur, err := client.GetChatMenuButton(ctx)
 	if err != nil {
 		log.Printf("telegram user: read the menu button: %v", err)
 		return false
 	}
-	label := i18n.T(i18n.Normalize(set.BotLang()), "user.menuApp")
 	if cur.Type == "web_app" && cur.WebApp != nil {
-		// Ours as it stands — the address and the label (a release renaming it must
-		// reach the bots already running).
-		if cur.WebApp.URL == url && cur.Text == label {
-			return true
-		}
-		// Ours is the address last set, or anything under this panel's subscription
-		// path (an older build set a fixed one there); anything else is the operator's.
-		ours := cur.WebApp.URL == set.TGMenuURL ||
-			strings.HasPrefix(cur.WebApp.URL, "https://"+set.Host+"/"+set.SubPathOr()+"/")
+		url := cur.WebApp.URL
+		ours := url == set.TGMenuURL ||
+			(set.Host != "" && strings.HasPrefix(url, "https://"+set.Host+"/"+set.SubPathOr()+"/"))
 		if !ours {
 			return true
 		}
+		if err := client.ResetChatMenuButton(ctx); err != nil {
+			log.Printf("telegram user: reset the menu button: %v", err)
+			return false
+		}
 	}
-	if err := client.SetChatMenuButton(ctx, label, url); err != nil {
-		log.Printf("telegram user: set the menu button: %v", err)
-		return false
-	}
-	_ = s.store.SetTelegramMenuURL(url)
+	_ = s.store.SetTelegramMenuURL("")
 	return true
 }
 

@@ -280,8 +280,6 @@ var en = map[string]string{
 	"user.btnCancelSub":      "🚫 Cancel the subscription",
 	"user.btnRenewPlan":      "🔄 Renew “%s”",
 	"user.btnPay":            "💳 Pay",
-	"user.btnMailingOn":      "🔔 Broadcasts: on",
-	"user.btnMailingOff":     "🔕 Broadcasts: off",
 
 	"user.cardPlan":               "💳 Plan: <b>%s</b>",
 	"user.cardPlanManual":         "💳 Plan: manual",
@@ -378,7 +376,7 @@ var en = map[string]string{
 	"user.paidFromBalance":       "✅ The “%s” plan was paid from your balance.",
 	"user.plansBalance":          "💰 You have %s ₽ on your balance — it goes towards the payment.",
 
-	"user.cmdStart": "Main menu",
+	"user.cmdStart": "My subscription",
 
 	// ── Support bot ──────────────────────────────────────────────────────────
 	"support.greeting":             "💬 <b>Support</b>\n\nDescribe the problem in a message to this chat — you can attach a screenshot. We'll reply right here.",

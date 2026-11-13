@@ -290,8 +290,6 @@ var ar = map[string]string{
 	"user.btnCancelSub":      "🚫 إلغاء الاشتراك",
 	"user.btnRenewPlan":      "🔄 تجديد «%s»",
 	"user.btnPay":            "💳 ادفع",
-	"user.btnMailingOn":      "🔔 الرسائل الجماعية: مفعّلة",
-	"user.btnMailingOff":     "🔕 الرسائل الجماعية: معطّلة",
 
 	"user.cardPlan":               "💳 الباقة: <b>%s</b>",
 	"user.cardPlanManual":         "💳 الباقة: يدوية",
@@ -388,7 +386,7 @@ var ar = map[string]string{
 	"user.paidFromBalance":       "✅ تم دفع باقة «%s» من رصيدك.",
 	"user.plansBalance":          "💰 في رصيدك %s ₽ — سيُحتسب ضمن الدفع.",
 
-	"user.cmdStart": "القائمة الرئيسية",
+	"user.cmdStart": "اشتراكي",
 
 	// ── Support bot ──────────────────────────────────────────────────────────
 	"support.greeting":             "💬 <b>الدعم</b>\n\nصف المشكلة في رسالة إلى هذه المحادثة — يمكنك إرفاق لقطة شاشة. سنرد هنا مباشرة.",
